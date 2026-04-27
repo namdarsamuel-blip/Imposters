@@ -1,0 +1,3246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Imposter Game">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#070b1a">
+<title>Imposter Word Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #070b1a;
+  --surface: #0d1428;
+  --surface2: #141e38;
+  --border: #1e2d55;
+  --accent: #6c3fff;
+  --accent2: #00e5ff;
+  --danger: #ff3d6b;
+  --success: #00ffaa;
+  --gold: #ffd700;
+  --text: #e8eaf6;
+  --muted: #5a6a9a;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+html { background:#070b1a; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 10%, rgba(108,63,255,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 90%, rgba(0,229,255,0.08) 0%, transparent 60%);
+  pointer-events:none; z-index:0;
+}
+
+.screen {
+  position:fixed; inset:0;
+  display:flex; flex-direction:column; align-items:center;
+  padding:20px 16px;
+  overflow-y:auto;
+  z-index:1;
+  opacity:0; pointer-events:none;
+  transition:opacity 0.35s;
+  height: 100dvh;
+}
+.screen.active { opacity:1; pointer-events:all; }
+
+.btn {
+  width:100%; max-width:400px;
+  padding:16px 24px; border-radius:14px; border:none;
+  font-family:'Orbitron',monospace; font-size:0.85rem;
+  font-weight:700; letter-spacing:2px; cursor:pointer;
+  transition:all 0.2s; text-transform:uppercase; display:block;
+}
+.btn-primary   { background:linear-gradient(135deg,var(--accent),#9c27b0); color:#fff; box-shadow:0 0 30px rgba(108,63,255,0.4); }
+.btn-primary:active { transform:scale(0.97); }
+.btn-secondary { background:transparent; border:1px solid var(--border); color:var(--muted); }
+.btn-secondary:hover { border-color:var(--accent); color:var(--text); }
+.btn-danger    { background:linear-gradient(135deg,var(--danger),#c2185b); color:#fff; box-shadow:0 0 25px rgba(255,61,107,0.35); }
+.btn + .btn    { margin-top:12px; }
+
+/* SPLASH */
+#splash { justify-content:center; }
+.hooded { width:120px; height:120px; margin:0 auto 18px; }
+.hooded svg { width:100%; height:100%; filter:drop-shadow(0 0 20px rgba(108,63,255,0.8)); }
+#splash h1  { font-family:'Orbitron',monospace; font-size:clamp(2rem,8vw,3rem); font-weight:900; text-align:center; }
+#splash h1 span { color:var(--accent2); }
+.tagline { color:var(--muted); font-size:1rem; letter-spacing:1px; margin:8px 0 36px; text-align:center; }
+
+/* SETUP */
+#setup { justify-content:flex-start; padding-top:56px; }
+.setup-title  { font-family:'Orbitron',monospace; font-size:1.3rem; color:var(--accent2); text-align:center; margin-bottom:24px; }
+.setup-card   { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px; width:100%; max-width:400px; margin-bottom:18px; }
+.setup-row    { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+.setup-row:last-child { margin-bottom:0; }
+.setup-label  { font-size:1rem; color:var(--muted); }
+.counter      { display:flex; align-items:center; gap:12px; }
+.counter-btn  { width:34px; height:34px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); color:var(--text); font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.counter-btn:hover { border-color:var(--accent); color:var(--accent); }
+.counter-val  { font-family:'Orbitron',monospace; font-size:1.4rem; font-weight:700; min-width:28px; text-align:center; color:var(--accent2); }
+.player-inputs { width:100%; max-width:400px; margin-bottom:18px; }
+.player-input-row { display:flex; align-items:center; gap:8px; margin-bottom:9px; }
+.player-dot   { width:26px; height:26px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.75rem; color:#000; }
+input[type=text] {
+  flex:1; background:var(--surface); border:1px solid var(--border);
+  border-radius:10px; padding:10px 14px; color:var(--text);
+  font-family:'Rajdhani',sans-serif; font-size:1rem; outline:none; transition:border-color 0.2s;
+}
+input[type=text]:focus { border-color:var(--accent); }
+input[type=text]::placeholder { color:var(--muted); }
+select option { background:#0d1428; color:#e8eaf6; }
+.name-suggestions {
+  position:absolute; top:100%; left:0; right:0; z-index:100;
+  background:var(--surface2); border:1px solid var(--accent);
+  border-radius:10px; overflow:hidden; margin-top:4px;
+  box-shadow:0 8px 24px rgba(0,0,0,0.4);
+}
+.sug-item {
+  padding:11px 14px; font-size:1rem; font-weight:600; cursor:pointer;
+  border-bottom:1px solid var(--border); transition:background 0.15s;
+}
+.sug-item:last-child { border-bottom:none; }
+.sug-item:hover, .sug-item:active { background:var(--accent); color:#fff; }
+
+/* REVEAL */
+#reveal { justify-content:flex-start; padding-top:40px; }
+.screen-title { font-family:'Orbitron',monospace; font-size:1.4rem; text-align:center; margin-bottom:6px; }
+.subtitle { color:var(--muted); font-size:0.95rem; text-align:center; margin-bottom:22px; line-height:1.5; }
+.player-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; width:100%; max-width:400px; margin-bottom:22px; }
+.player-card { background:var(--surface); border:2px solid var(--border); border-radius:14px; padding:18px 10px; text-align:center; cursor:pointer; transition:all 0.2s; position:relative; }
+.player-card:hover { transform:scale(1.03); }
+.player-card.revealed { opacity:0.38; pointer-events:none; }
+.avatar { width:54px; height:54px; border-radius:50%; margin:0 auto 8px; display:flex; align-items:center; justify-content:center; font-family:'Orbitron',monospace; font-size:1.3rem; font-weight:700; color:#000; }
+.player-name-text { font-size:0.95rem; font-weight:600; }
+.check-badge { position:absolute; top:6px; right:6px; width:20px; height:20px; border-radius:50%; background:var(--success); color:#000; font-size:0.6rem; display:flex; align-items:center; justify-content:center; font-weight:900; }
+
+/* WORD CARD */
+#wordcard { justify-content:center; }
+.wc-banner { width:100%; max-width:360px; border-radius:16px; padding:20px; text-align:center; margin-bottom:24px; }
+.wc-banner .wc-label { font-size:1rem; font-weight:600; opacity:0.7; margin-bottom:4px; color:#000; }
+.wc-banner .wc-name  { font-family:'Orbitron',monospace; font-size:2rem; font-weight:900; }
+.card-wrap { width:280px; min-height:170px; border-radius:20px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.3s; margin-bottom:16px; }
+.card-hidden   { background:var(--surface2); border:2px dashed var(--border); }
+.card-word     { background:var(--surface2); border:2px solid var(--success); box-shadow:0 0 40px rgba(0,255,170,0.2); }
+.card-imposter { background:var(--surface2); border:2px solid var(--danger);  box-shadow:0 0 40px rgba(255,61,107,0.3); }
+.word-text     { font-family:'Orbitron',monospace; font-size:1.4rem; font-weight:700; text-align:center; padding:18px; }
+.word-color    { color:var(--success); }
+.imposter-color{ color:var(--danger); }
+.tap-hint      { color:var(--accent2); font-size:0.85rem; letter-spacing:1px; }
+
+/* CLUE ROUND */
+#clueround { justify-content:flex-start; padding:0; display:flex; flex-direction:column; background:var(--bg); overflow:hidden; height:100%; }
+
+.clue-header { padding:10px 14px 8px; flex-shrink:0; width:100%; background:var(--bg); }
+
+.timer-chip { background:var(--surface2);border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:4px 8px;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;transition:all 0.15s }
+.timer-chip.active { background:var(--accent);border-color:var(--accent);color:#fff }
+.timer-chip:hover { border-color:var(--accent);color:var(--accent) }
+.round-badge { display:inline-block; background:var(--surface2); border:1px solid var(--accent); border-radius:20px; padding:5px 16px; font-size:0.8rem; color:var(--accent); letter-spacing:2px; font-family:'Orbitron',monospace; }
+
+.btn-danger-sm { padding:7px 14px; border-radius:10px; border:none; background:linear-gradient(135deg,var(--danger),#c2185b); color:#fff; font-family:'Orbitron',monospace; font-size:0.7rem; font-weight:700; cursor:pointer; letter-spacing:1px; }
+
+/* Collapsible history */
+.clue-history-toggle { display:flex; justify-content:space-between; align-items:center; padding:9px 14px; background:var(--surface); border-radius:12px; cursor:pointer; user-select:none; }
+.clue-history-toggle span { font-size:0.8rem; color:var(--muted); letter-spacing:0.5px; }
+.clue-history-body { max-height:0; overflow:hidden; transition:max-height 0.4s ease; }
+.clue-history-body.open { max-height:9999px; overflow:visible; }
+.clue-history-inner { padding:6px 0 2px; display:flex; flex-direction:column; gap:5px; }
+.ch-round-label { font-size:0.7rem; color:var(--accent); letter-spacing:2px; padding:4px 2px 2px; }
+.ch-entry { display:flex; align-items:center; gap:8px; padding:7px 10px; background:var(--surface); border-radius:10px; border-left:3px solid transparent; }
+.ch-avatar { width:26px; height:26px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-family:'Orbitron',monospace; font-size:0.65rem; font-weight:700; color:#000; }
+.ch-name { font-size:0.78rem; font-weight:700; min-width:54px; }
+.ch-word { font-family:'Orbitron',monospace; font-size:0.85rem; color:var(--text); }
+
+/* Player bar + input — immediately below history, no gap */
+.clue-footer { flex-shrink:0; width:100%; padding:10px 14px 12px; background:var(--bg); border-top:1px solid var(--border); }
+.current-player-bar { display:flex; align-items:center; gap:8px; padding:9px 12px; border-radius:12px; margin-bottom:8px; }
+.cp-dot { width:11px; height:11px; border-radius:50%; flex-shrink:0; }
+.clue-input-row { display:flex; gap:8px; width:100%; }
+.clue-input-row input { flex:1; }
+.btn-sm { padding:10px 18px; border-radius:10px; border:none; background:var(--accent); color:#fff; font-family:'Orbitron',monospace; font-size:0.75rem; font-weight:700; cursor:pointer; white-space:nowrap; }
+
+/* VOTING */
+#voting { justify-content:flex-start; padding:0; overflow-y:auto; }
+.screen { background: var(--bg); }
+
+/* Compact colored header */
+.voter-hero { width:100%; padding:18px 20px 16px; display:flex; flex-direction:column; align-items:center; flex-shrink:0; }
+.voter-hero .vh-label { font-size:0.75rem; font-weight:700; letter-spacing:3px; color:rgba(0,0,0,0.5); margin-bottom:2px; }
+.voter-hero .vh-name  { font-family:'Orbitron',monospace; font-size:1.8rem; font-weight:900; color:#000; line-height:1.1; text-align:center; }
+.voter-hero .vh-sub   { font-size:0.78rem; color:rgba(0,0,0,0.45); margin-top:4px; }
+
+.voting-body { width:100%; max-width:440px; padding:10px 14px 24px; align-self:center; }
+
+/* Progress dots — smaller, tighter */
+.voter-dots { display:flex; gap:6px; justify-content:center; margin:0 0 12px; flex-wrap:wrap; }
+.vdot { width:28px; height:28px; border-radius:50%; border:2px solid transparent; display:flex; align-items:center; justify-content:center; font-size:0.65rem; font-weight:700; color:#000; transition:all 0.2s; }
+.vdot.done    { opacity:0.35; }
+.vdot.active  { border-color:#fff; box-shadow:0 0 10px rgba(255,255,255,0.4); transform:scale(1.2); }
+.vdot.waiting { filter:brightness(0.35); }
+
+/* Skip whole vote — slim */
+.skip-vote-btn { width:100%; padding:10px; border-radius:10px; border:1px dashed var(--border); background:transparent; color:var(--muted); font-family:'Orbitron',monospace; font-size:0.68rem; font-weight:700; letter-spacing:1px; cursor:pointer; margin-bottom:12px; transition:all 0.2s; }
+.skip-vote-btn:active { border-color:var(--accent2); color:var(--accent2); }
+
+/* Clue recap — slim collapsed bar */
+.recap-block  { background:var(--surface); border:1px solid var(--border); border-radius:12px; margin-bottom:12px; overflow:hidden; }
+.recap-header { display:flex; justify-content:space-between; align-items:center; padding:10px 14px; cursor:pointer; user-select:none; }
+.recap-header span { font-size:0.78rem; color:var(--muted); letter-spacing:1px; }
+.recap-toggle { font-size:0.9rem; color:var(--muted); transition:transform 0.2s; }
+.recap-header.open .recap-toggle { transform:rotate(180deg); }
+.recap-body { padding:0 12px; max-height:0; overflow:hidden; transition:max-height 0.4s ease; }
+.recap-body.open { max-height:9999px; overflow:visible; padding-bottom:10px; }
+.recap-round-label { font-size:0.68rem; color:var(--accent); letter-spacing:2px; margin:8px 0 4px; }
+.recap-clue-row { display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-radius:7px; margin-bottom:4px; border-left:3px solid transparent; background:var(--surface2); }
+.recap-clue-name { font-weight:700; font-size:0.82rem; }
+.recap-clue-word { font-family:'Orbitron',monospace; font-size:0.78rem; }
+
+/* Vote label */
+.vote-label { font-family:'Orbitron',monospace; font-size:0.78rem; color:var(--accent2); text-align:center; margin:0 0 10px; letter-spacing:1px; }
+
+/* GRID vote options — 2 or 3 columns */
+.vote-options { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:10px; }
+.vote-option {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:6px; background:var(--surface); border:2px solid var(--border);
+  border-radius:14px; padding:14px 8px; cursor:pointer; transition:all 0.18s;
+  position:relative;
+}
+.vote-option .vo-avatar { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Orbitron',monospace; font-size:1rem; font-weight:700; color:#000; }
+.vote-option .vo-name { font-size:0.88rem; font-weight:700; text-align:center; }
+.vote-option .vo-btn { font-family:'Orbitron',monospace; font-size:0.62rem; font-weight:700; padding:4px 10px; border-radius:6px; color:#000; letter-spacing:1px; margin-top:2px; }
+.vote-option:active { transform:scale(0.96); }
+
+/* Skip row — full width at bottom */
+.vote-option.skip-opt { grid-column:1/-1; flex-direction:row; justify-content:center; border-color:var(--border); color:var(--muted); font-size:0.82rem; font-weight:700; letter-spacing:1px; padding:12px; gap:8px; }
+.vote-option.skip-opt:active { border-color:var(--accent2); color:var(--accent2); }
+
+/* Toggle switch */
+.toggle-switch { position:relative; width:44px; height:24px; flex-shrink:0; }
+.toggle-switch input { opacity:0; width:0; height:0; }
+.toggle-slider { position:absolute; inset:0; background:var(--border); border-radius:24px; cursor:pointer; transition:0.3s; }
+.toggle-slider::before { content:''; position:absolute; width:18px; height:18px; left:3px; top:3px; background:#fff; border-radius:50%; transition:0.3s; }
+.toggle-switch input:checked + .toggle-slider { background:var(--accent); }
+.toggle-switch input:checked + .toggle-slider::before { transform:translateX(20px); }
+
+/* RESULTS — dramatic typewriter */
+#results { justify-content:center; padding:0; }
+.reveal-stage { width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:30px 24px; }
+.reveal-lines { display:flex; flex-direction:column; align-items:center; gap:14px; width:100%; max-width:400px; margin-bottom:32px; }
+.reveal-line { font-family:'Orbitron',monospace; text-align:center; line-height:1.3; min-height:1.3em; }
+.reveal-line.size-sm   { font-size:0.85rem; color:var(--muted); letter-spacing:2px; }
+.reveal-line.size-md   { font-size:1.1rem;  color:var(--text);  font-weight:600; }
+.reveal-line.size-lg   { font-size:1.8rem;  font-weight:900; }
+.reveal-line.size-xl   { font-size:2.4rem;  font-weight:900; }
+.reveal-line.size-word { font-size:2rem;    font-weight:900; color:var(--accent2); text-shadow:0 0 30px rgba(0,229,255,0.5); }
+.reveal-cursor { display:inline-block; width:2px; height:1em; background:currentColor; margin-left:2px; vertical-align:middle; animation:blink 0.7s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.reveal-actions { display:flex; flex-direction:column; align-items:center; width:100%; }
+
+/* HOW TO PLAY */
+#howtoplay { justify-content:flex-start; padding:0 16px; overflow-y:auto; }
+.htp-card { display:flex; gap:14px; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:16px; margin-bottom:12px; }
+.htp-num { width:36px; height:36px; border-radius:50%; background:var(--accent); color:#fff; font-family:'Orbitron',monospace; font-size:0.85rem; font-weight:900; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.htp-body { flex:1; }
+.htp-title { font-family:'Orbitron',monospace; font-size:0.82rem; font-weight:700; color:var(--accent2); letter-spacing:1px; margin-bottom:6px; }
+.htp-text { font-size:0.9rem; color:var(--muted); line-height:1.55; }
+.htp-text strong { color:var(--text); }
+
+/* SPLASH polish */
+#splash { justify-content:center; gap:0; }
+#splash h1 { font-size:clamp(2.2rem,9vw,3.2rem); letter-spacing:3px; }
+
+/* SETUP polish */
+#setup { justify-content:flex-start; padding-top:48px; gap:0; }
+.setup-card { border-radius:18px; }
+.setup-row { padding:4px 0; }
+
+/* REVEAL polish */
+.player-card { transition:transform 0.15s, border-color 0.2s, opacity 0.3s; }
+.player-card:active { transform:scale(0.96); }
+.avatar { font-size:1.4rem; }
+
+/* WORD CARD polish */
+.wc-banner { border-radius:18px; }
+.card-wrap { border-radius:22px; }
+
+/* VOTING polish */
+.voter-hero { border-bottom: 1px solid rgba(0,0,0,0.15); }
+
+/* RESULTS polish */
+#results { justify-content:center; }
+.reveal-stage { padding:20px 24px 30px; }
+.reveal-line.size-xl { font-size:clamp(2rem,8vw,2.6rem); }
+.reveal-line.size-lg { font-size:clamp(1.3rem,5vw,1.8rem); }
+
+/* FINAL */
+#final { justify-content:center; gap:6px; }
+.trophy { font-size:5rem; margin-bottom:6px; text-align:center; animation:bounceIn 0.6s ease; }
+@keyframes bounceIn { 0%{transform:scale(0.3);opacity:0} 70%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
+.survival-count { font-family:'Orbitron',monospace; font-size:3rem; color:var(--gold); text-shadow:0 0 30px rgba(255,215,0,0.5); text-align:center; }
+.survival-label { color:var(--muted); margin-bottom:20px; text-align:center; font-size:0.9rem; }
+.stat-row { display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:1px solid var(--border); font-size:0.95rem; }
+.stat-row:last-child { border-bottom:none; }
+
+/* GENERAL: smooth screen transitions */
+.screen { transition:opacity 0.3s ease; }
+.screen::-webkit-scrollbar, .clue-log::-webkit-scrollbar, #howtoplay::-webkit-scrollbar { display:none; }
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div class="screen active" id="splash">
+  <div class="hooded">
+    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="bgGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#6c3fff" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="#6c3fff" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <circle cx="50" cy="50" r="46" fill="url(#bgGlow)"/>
+      <circle cx="50" cy="50" r="44" stroke="#6c3fff" stroke-width="2" stroke-opacity="0.4"/>
+      <text x="50" y="68" text-anchor="middle" font-family="Georgia, serif" font-size="62" font-weight="700" fill="#a78bfa">?</text>
+    </svg>
+  </div>
+  <h1>IMPOSTER<br><span>WORD GAME</span></h1>
+  <p class="tagline">Hidden words. Cunning lies. One imposter.</p>
+  <button class="btn btn-primary" onclick="showScreen('setup')">GET STARTED</button>
+  <button class="btn btn-secondary" onclick="showScreen('mp-splash')" style="margin-top:12px;border-color:var(--accent2);color:var(--accent2)">🌐 PLAY ONLINE</button>
+  <button class="btn btn-secondary" onclick="showScreen('howtoplay')" style="margin-top:12px">HOW TO PLAY</button>
+</div>
+
+<!-- HOW TO PLAY -->
+<div class="screen" id="howtoplay">
+  <div style="width:100%;max-width:420px;padding-bottom:30px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-top:16px">
+      <div style="font-family:'Orbitron',monospace;font-size:1.2rem;font-weight:900;color:var(--accent2)">HOW TO PLAY</div>
+      <button onclick="showScreen('splash')" style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);border-radius:10px;padding:6px 14px;font-family:'Rajdhani',sans-serif;font-size:0.9rem;cursor:pointer">← Back</button>
+    </div>
+
+    <!-- Step cards -->
+    <div class="htp-card">
+      <div class="htp-num">1</div>
+      <div class="htp-body">
+        <div class="htp-title">SETUP</div>
+        <div class="htp-text">Choose how many players and how many imposters. You can also toggle whether imposters know each other, show a category hint, and whether the game ends on the first vote.</div>
+      </div>
+    </div>
+
+    <div class="htp-card">
+      <div class="htp-num">2</div>
+      <div class="htp-body">
+        <div class="htp-title">REVEAL YOUR WORD</div>
+        <div class="htp-text">Pass the phone around. Each player taps their name, sees their secret word privately, then taps <strong>Got It</strong> and passes it on. Imposters see <span style="color:var(--danger)">🎭 IMPOSTER</span> instead of the word — but may get a vague category hint.</div>
+      </div>
+    </div>
+
+    <div class="htp-card">
+      <div class="htp-num">3</div>
+      <div class="htp-body">
+        <div class="htp-title">GIVE CLUES</div>
+        <div class="htp-text">Go clockwise around the circle. Each player says <strong>one word</strong> as a clue related to the secret word. Imposters must bluff — say something that sounds like you know the word without giving yourself away. Everyone can see all the clues as they come in.</div>
+      </div>
+    </div>
+
+    <div class="htp-card">
+      <div class="htp-num">4</div>
+      <div class="htp-body">
+        <div class="htp-title">VOTE</div>
+        <div class="htp-text">After clues, it's time to vote. Pass the phone around — each player privately votes for who they think the imposter is, or skips. The player with the most votes is eliminated. If majority skip, nobody goes out and you do another round.</div>
+      </div>
+    </div>
+
+    <div class="htp-card">
+      <div class="htp-num">5</div>
+      <div class="htp-body">
+        <div class="htp-title">THE REVEAL</div>
+        <div class="htp-text">Watch the dramatic reveal — was the voted-out player the imposter or innocent? If caught, the game ends and the secret word is revealed. If innocent, the imposter survives and you play another round!</div>
+      </div>
+    </div>
+
+    <div class="htp-card" style="background:linear-gradient(135deg,rgba(108,63,255,0.15),rgba(0,229,255,0.08));border-color:var(--accent)">
+      <div class="htp-num" style="background:var(--accent)">🎭</div>
+      <div class="htp-body">
+        <div class="htp-title" style="color:var(--accent2)">IMPOSTER STRATEGY</div>
+        <div class="htp-text">Listen carefully to everyone's clues before your turn. Say something that could fit the category but isn't too specific. If you survive multiple rounds without being caught, you score more points!</div>
+      </div>
+    </div>
+
+    <div class="htp-card" style="background:linear-gradient(135deg,rgba(0,255,170,0.1),rgba(0,0,0,0));border-color:var(--success)">
+      <div class="htp-num" style="background:var(--success);color:#000">💡</div>
+      <div class="htp-body">
+        <div class="htp-title" style="color:var(--success)">CREW STRATEGY</div>
+        <div class="htp-text">Listen for clues that are too vague, too weird, or don't quite fit. The imposter often gives broad generic clues. Challenge anyone who seems off — but don't accuse too fast or the real imposter gets away!</div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="showScreen('setup')" style="margin-top:8px">LET'S PLAY →</button>
+    <button class="btn btn-secondary" onclick="showScreen('splash')" style="margin-top:10px">BACK</button>
+  </div>
+</div>
+
+<!-- SETUP -->
+<div class="screen" id="setup">
+  <div class="setup-title">⚙ GAME SETUP</div>
+  <div class="setup-card">
+    <div class="setup-row" style="display:none">
+      <span class="setup-label">Players</span>
+      <div class="counter">
+        <button class="counter-btn" onclick="adj('players',-1)">−</button>
+        <span class="counter-val" id="playerCount">4</span>
+        <button class="counter-btn" onclick="adj('players',1)">+</button>
+      </div>
+    </div>
+    <div class="setup-row">
+      <span class="setup-label">Imposters</span>
+      <div class="counter">
+        <button class="counter-btn" onclick="adj('imposters',-1)">−</button>
+        <span class="counter-val" id="imposterCount">1</span>
+        <button class="counter-btn" onclick="adj('imposters',1)">+</button>
+      </div>
+    </div>
+    <div class="setup-row" style="margin-bottom:0">
+      <div>
+        <div class="setup-label">Show category</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">Everyone sees a broad category hint</div>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="toggleCategory">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="setup-row" style="margin-bottom:0">
+      <div>
+        <div class="setup-label">Sudden Death</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">First vote ends the game — no second chances</div>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="toggleSuddenDeath" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <!-- Clue Timer -->
+    <div class="setup-row" style="margin-bottom:0;margin-top:8px">
+      <div>
+        <div class="setup-label">⏱ Clue Timer</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">Time each player has to give a clue</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:200px">
+        <button onclick="setClueTimer(0)"   id="ct_0"  class="timer-chip">OFF</button>
+        <button onclick="setClueTimer(10)"  id="ct_10" class="timer-chip">10s</button>
+        <button onclick="setClueTimer(20)"  id="ct_20" class="timer-chip">20s</button>
+        <button onclick="setClueTimer(30)"  id="ct_30" class="timer-chip active">30s</button>
+        <button onclick="setClueTimer(60)"  id="ct_60" class="timer-chip">1m</button>
+        <button onclick="setClueTimer(90)"  id="ct_90" class="timer-chip">1:30</button>
+        <button onclick="setClueTimer(120)" id="ct_120" class="timer-chip">2m</button>
+      </div>
+    </div>
+
+    <!-- Vote Timer -->
+    <div class="setup-row" style="margin-bottom:0;margin-top:8px">
+      <div>
+        <div class="setup-label">🗳 Vote Timer</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">Time each player has to cast their vote</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:200px">
+        <button onclick="setVoteTimer(0)"   id="vt_0"  class="timer-chip">OFF</button>
+        <button onclick="setVoteTimer(10)"  id="vt_10" class="timer-chip">10s</button>
+        <button onclick="setVoteTimer(20)"  id="vt_20" class="timer-chip">20s</button>
+        <button onclick="setVoteTimer(30)"  id="vt_30" class="timer-chip active">30s</button>
+        <button onclick="setVoteTimer(60)"  id="vt_60" class="timer-chip">1m</button>
+        <button onclick="setVoteTimer(90)"  id="vt_90" class="timer-chip">1:30</button>
+        <button onclick="setVoteTimer(120)" id="vt_120" class="timer-chip">2m</button>
+      </div>
+    </div>
+
+    <!-- More Options collapsed -->
+    <div id="moreOptionsToggle" onclick="toggleMoreOptions()" style="display:flex;align-items:center;justify-content:space-between;padding:12px 0 0;cursor:pointer;margin-top:10px;border-top:1px solid var(--border)">
+      <span style="font-size:0.8rem;color:var(--muted);letter-spacing:1px">MORE OPTIONS</span>
+      <span id="moreOptionsArrow" style="color:var(--muted);font-size:0.85rem;transition:transform 0.2s">▼</span>
+    </div>
+    <div id="moreOptionsBody" style="display:none;padding-top:6px">
+      <div class="setup-row">
+        <div>
+          <div class="setup-label">Imposter only</div>
+          <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">Hide category from everyone except imposter</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggleImposterOnly">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="setup-row">
+        <div>
+          <div class="setup-label">Imposters know each other</div>
+          <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">They'll see who else is an imposter</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggleKnowEachOther" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="setup-row">
+        <div>
+          <div class="setup-label">Hide vote results</div>
+          <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">Don't show who voted for who</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggleHideVotes">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="setup-row">
+        <div>
+          <div class="setup-label">Force vote every round</div>
+          <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">Skip the choice — vote immediately after clues</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggleForceVote">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="setup-row" style="margin-bottom:0">
+        <div>
+          <div class="setup-label">Beginner mode</div>
+          <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">Shows "pass the phone" screen between players</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggleBeginner">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+  <!-- Player Picker -->
+  <div style="max-width:400px;width:100%;margin-bottom:18px">
+
+    <!-- Selected players -->
+    <div style="font-size:0.72rem;color:var(--muted);letter-spacing:2px;margin-bottom:8px">PLAYERS <span id="selectedCount" style="color:var(--accent2)">0</span></div>
+    <div id="selectedPlayers" style="display:flex;flex-wrap:wrap;gap:6px;min-height:36px;margin-bottom:14px"></div>
+
+    <!-- Search + A-Z -->
+    <div style="position:relative;margin-bottom:8px">
+      <input type="text" id="nameSearchInput" placeholder="Search or type a new name..." autocomplete="off"
+        oninput="filterNamePicker()"
+        style="width:100%;padding-right:40px" />
+      <button onclick="document.getElementById('nameSearchInput').value='';filterNamePicker()"
+        style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);font-size:1rem;cursor:pointer">✕</button>
+    </div>
+
+    <!-- A–Z letter bar -->
+    <div id="alphaBar" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px"></div>
+
+    <!-- Name grid -->
+    <div id="namePickerGrid" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+  </div>
+
+  <!-- Announcer voice picker -->
+  <div class="setup-card" style="max-width:400px;width:100%;margin-bottom:18px">
+    <div class="setup-row" style="margin-bottom:10px">
+      <div>
+        <div class="setup-label">🎙 Announcer Voice</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">Reads the reveal out loud</div>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="toggleAnnouncer" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <select id="voiceSelect" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:0.95rem;outline:none;margin-bottom:10px">
+      <option>Loading voices...</option>
+    </select>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="voiceTestInput" placeholder="Test phrase..." value="Jacob has been voted out. IMPOSTER!" style="flex:1;font-size:0.9rem" />
+      <button class="btn-sm" onclick="testVoice()" style="border-radius:10px;padding:10px 14px">▶ TEST</button>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" onclick="startGame()">START GAME</button>
+  <button class="btn btn-secondary" onclick="showScreen('splash')" style="margin-top:10px">BACK</button>
+</div>
+
+<!-- REVEAL -->
+<div class="screen" id="reveal">
+  <div style="display:flex;align-items:center;justify-content:space-between;width:100%;max-width:400px;margin-bottom:8px">
+    <div class="screen-title" style="margin:0">PLAYERS</div>
+    <button onclick="backToSetup()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:10px;padding:6px 14px;font-family:'Rajdhani',sans-serif;font-size:0.85rem;cursor:pointer">⚙ SETTINGS</button>
+  </div>
+  <div id="revealCategoryBanner" style="display:none;font-size:0.82rem;color:var(--muted);text-align:center;margin:-10px 0 10px;letter-spacing:1px">
+    Category: <span id="revealCategoryText" style="color:var(--accent2);font-weight:700"></span>
+  </div>
+  <p id="revealSubtitle" class="subtitle" style="margin-top:0;margin-bottom:6px">Each player taps their own name to see their secret word.</p>
+  <div style="width:100%;max-width:400px;margin-bottom:10px;display:flex;justify-content:flex-end">
+    <button id="revealReorderBtn" onclick="toggleRevealReorder()" class="btn btn-secondary" style="padding:8px 16px;font-size:0.8rem;border-color:var(--accent);color:var(--accent)">↕ SET ORDER</button>
+  </div>
+  <div id="playerGrid" style="width:100%;max-width:400px;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px"></div>
+
+  <!-- Quick add player -->
+  <div id="quickAddRow" style="display:flex;gap:8px;width:100%;max-width:400px;margin-bottom:12px">
+    <div style="flex:1;position:relative">
+      <input type="text" id="quickAddInput" placeholder="Add a player..." autocomplete="off"
+        oninput="showQuickSuggestions()" onfocus="showQuickSuggestions()" onblur="hideQuickSuggestions()"
+        onkeydown="if(event.key==='Enter')quickAddPlayer()"
+        style="width:100%" />
+      <div id="quickAddSug" class="name-suggestions" style="display:none;bottom:100%;top:auto;margin-bottom:4px;margin-top:0"></div>
+    </div>
+    <button class="btn-sm" onclick="quickAddPlayer()" style="border-radius:10px;padding:10px 16px">+ ADD</button>
+  </div>
+
+  <button class="btn btn-primary" id="startRoundBtn" onclick="startClueRound()" style="display:none;max-width:400px;width:100%">START CLUE ROUND ▶</button>
+  <button class="btn btn-secondary" id="reviewBtn" onclick="toggleReviewMode()" style="display:none;max-width:400px;width:100%;margin-top:10px;border-color:var(--accent2);color:var(--accent2)">🔍 REVIEW CARDS</button>
+</div>
+
+<!-- WORD CARD -->
+<div class="screen" id="wordcard" style="justify-content:center;align-items:center">
+  <div class="wc-banner" id="wcBanner" style="text-align:center;width:100%;max-width:340px">
+    <div class="wc-label">Hi,</div>
+    <div class="wc-name" id="wcName">—</div>
+  </div>
+
+  <div id="wcHidden" style="text-align:center;width:100%">
+    <div class="card-wrap card-hidden" id="wcCard" onclick="revealCard()" style="cursor:pointer;margin:0 auto">
+      <div style="text-align:center">
+        <div style="font-size:2rem;margin-bottom:8px">👁</div>
+        <div style="color:var(--muted);font-size:0.9rem;letter-spacing:1px">TAP TO SEE YOUR WORD</div>
+        <div style="color:var(--muted);font-size:0.75rem;margin-top:6px;opacity:0.6">Make sure nobody else is watching</div>
+      </div>
+    </div>
+    <button id="wcHiddenBackBtn" onclick="wcGoBack()" style="display:none;max-width:340px;width:100%;margin-top:12px;background:none;border:1px solid var(--border);color:var(--muted);border-radius:14px;padding:12px;font-family:'Rajdhani',sans-serif;font-size:1rem;cursor:pointer">← BACK</button>
+  </div>
+
+  <div id="wcRevealed" style="display:none;text-align:center;width:100%;align-items:center;flex-direction:column">
+    <div class="card-wrap" id="wcRevealedCard" style="cursor:default;pointer-events:none;margin:0 auto">
+      <div id="wcWordContent" style="text-align:center;padding:16px"></div>
+    </div>
+    <button class="btn btn-primary" onclick="gotIt()" style="max-width:340px;width:100%;margin-top:16px">✓ GOT IT</button>
+    <button id="wcBackBtn" onclick="wcGoBack()" style="display:none;max-width:340px;width:100%;margin-top:10px;background:none;border:1px solid var(--border);color:var(--muted);border-radius:14px;padding:12px;font-family:'Rajdhani',sans-serif;font-size:1rem;cursor:pointer">← BACK</button>
+  </div>
+</div>
+
+<!-- HANDOFF SCREEN — between players -->
+<div class="screen" id="handoff" style="justify-content:center">
+  <div style="text-align:center;padding:30px 24px;max-width:340px">
+    <div style="font-size:4rem;margin-bottom:16px">📱</div>
+    <div style="font-family:'Orbitron',monospace;font-size:1.3rem;font-weight:900;color:var(--accent2);letter-spacing:2px;margin-bottom:16px">PASS THE PHONE</div>
+    <div id="handoffMsg" style="font-size:1.05rem;color:var(--muted);line-height:1.7;margin-bottom:36px"></div>
+    <button class="btn btn-primary" id="handoffContinueBtn" onclick="handoffContinue()" style="max-width:340px;width:100%">OK, GOT IT →</button>
+  </div>
+</div>
+
+<!-- MID-CLUE REORDER -->
+<div class="screen" id="midreorder" style="justify-content:flex-start;padding-top:20px">
+  <div style="width:100%;max-width:400px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding:0 4px">
+      <div style="font-family:'Orbitron',monospace;font-size:0.9rem;color:var(--accent);letter-spacing:1px">↕ SET ORDER</div>
+      <button onclick="closeMidClueReorder()" style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);border-radius:10px;padding:6px 14px;font-family:'Rajdhani',sans-serif;font-size:0.9rem;cursor:pointer">← BACK</button>
+    </div>
+    <p id="reorderHint" style="font-size:0.85rem;color:var(--muted);text-align:center;margin-bottom:14px">Tap a player to pick them up, then tap a position to place them</p>
+    <div id="midReorderList" style="display:flex;flex-direction:column;gap:8px;width:100%"></div>
+  </div>
+</div>
+
+<!-- MID-GAME REVIEW -->
+<div class="screen" id="midreview" style="justify-content:flex-start;padding-top:20px">
+  <div style="width:100%;max-width:400px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:0 4px">
+      <div style="font-family:'Orbitron',monospace;font-size:0.9rem;color:var(--accent2);letter-spacing:1px">🔍 REVIEW YOUR CARD</div>
+      <button onclick="closeMidGameReview()" style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);border-radius:10px;padding:6px 14px;font-family:'Rajdhani',sans-serif;font-size:0.9rem;cursor:pointer">← BACK TO GAME</button>
+    </div>
+    <p style="font-size:0.85rem;color:var(--muted);text-align:center;margin-bottom:14px">Tap your name to review your word.<br>An alert will sound when opened.</p>
+    <div id="midReviewGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%"></div>
+  </div>
+</div>
+
+<!-- CLUE ROUND -->
+<div class="screen" id="clueround">
+  <!-- Top: current player + input -->
+  <div class="clue-footer" style="border-top:none;border-bottom:1px solid var(--border);margin-top:0">
+    <div class="clue-top-row" style="margin-bottom:8px;display:flex;align-items:center;gap:4px;flex-wrap:nowrap">
+      <span class="round-badge" id="roundBadge" style="white-space:nowrap;flex-shrink:0;font-size:0.6rem;padding:4px 8px">ROUND 1</span>
+      <span id="imposterCountBadge" style="font-size:0.6rem;color:var(--danger);background:rgba(255,61,107,0.12);border:1px solid rgba(255,61,107,0.3);border-radius:20px;padding:3px 7px;font-family:'Orbitron',monospace;white-space:nowrap;flex-shrink:0"></span>
+      <div style="flex:1"></div>
+      <button class="btn-danger-sm" style="background:rgba(0,229,255,0.1);border:1px solid var(--accent2);color:var(--accent2);padding:5px 8px;flex-shrink:0;font-size:0.85rem" id="clueRoundReviewBtn" onclick="openMidGameReview()">🔍</button>
+      <button class="btn-danger-sm" id="clueReorderBtn" style="background:rgba(108,63,255,0.12);border:1px solid var(--accent);color:var(--accent);padding:5px 8px;flex-shrink:0" onclick="toggleInlineReorder()">↕</button>
+      <button class="btn-danger-sm" style="background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.3);color:#ffd700;padding:5px 8px;flex-shrink:0" onclick="undoLast()">↩</button>
+      <button class="btn-danger-sm" style="flex-shrink:0;padding:5px 10px;font-size:0.75rem" onclick="goToVoting()">🗳 VOTE</button>
+    </div>
+
+    <!-- Inline reorder panel -->
+    <div id="inlineReorderPanel" style="display:none;padding:8px 0 10px;border-bottom:1px solid var(--border);margin-bottom:8px">
+      <div style="font-size:0.7rem;color:var(--muted);letter-spacing:1px;text-align:center;margin-bottom:8px" id="inlineReorderHint">Tap to remove a player's position, then tap to reassign</div>
+      <div id="inlineReorderList" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+
+    <div id="categoryBanner" style="display:none;text-align:center;padding:4px 0 8px;font-size:0.82rem;color:var(--muted);letter-spacing:1px">
+      Category: <span id="categoryBannerText" style="color:var(--accent2);font-weight:700;font-size:0.9rem"></span>
+    </div>
+    <div class="current-player-bar" id="currentPlayerBar">
+      <div class="cp-dot" id="cpDot"></div>
+      <span id="cpName" style="font-weight:700;font-size:1.05rem"></span>
+      <span id="cpTurn" style="font-size:0.8rem;color:rgba(255,255,255,0.4);margin-left:8px"></span>
+      <div style="flex:1"></div>
+      <div id="clueTimerDisplay" style="display:none;font-family:'Orbitron',monospace;font-size:1.1rem;font-weight:700;min-width:36px;text-align:right"></div>
+    </div>
+    <div class="clue-input-row">
+      <input type="text" id="clueInput" placeholder="Type your clue..." autocomplete="off" onkeydown="if(event.key==='Enter'){submitClue();}" />
+      <button class="btn-sm" onclick="submitClue()">ADD</button>
+      <button class="btn-sm" onclick="skipClueEntry()" style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);flex-shrink:0">SKIP</button>
+    </div>
+  </div>
+
+  <!-- Bottom: scrollable clue history, always open -->
+  <div style="flex:1;overflow-y:auto;width:100%;padding:12px 14px 20px;">
+    <div id="clueHistoryLabel" style="font-size:0.72rem;color:var(--muted);letter-spacing:2px;margin-bottom:8px;text-align:center">CLUE HISTORY</div>
+    <div id="clueHistoryBody"></div>
+  </div>
+</div>
+
+<!-- END OF CLUES DECISION -->
+<div class="screen" id="clueend" style="justify-content:center">
+  <div style="text-align:center;padding:30px 24px;max-width:360px;width:100%">
+    <div style="font-size:0.72rem;color:var(--muted);letter-spacing:2px;margin-bottom:12px" id="clueendRound">ROUND 1 COMPLETE</div>
+    <div style="font-family:'Orbitron',monospace;font-size:1.3rem;font-weight:900;color:var(--text);margin-bottom:8px">Everyone gave a clue.</div>
+    <div style="font-size:0.9rem;color:var(--muted);margin-bottom:32px">What do you want to do?</div>
+    <button class="btn btn-primary" onclick="goToVoting()" style="width:100%;margin-bottom:14px;font-size:1rem">
+      🗳 VOTE NOW
+    </button>
+    <button class="btn btn-secondary" onclick="continueClues()" style="width:100%;font-size:1rem">
+      💬 ANOTHER CLUE ROUND
+    </button>
+  </div>
+</div>
+
+<!-- VOTING -->
+<div class="screen" id="voting" style="justify-content:flex-start;padding:0">
+  <!-- Top: who's voting + vote buttons -->
+  <div id="votingTop" style="width:100%;flex-shrink:0;padding:12px 16px 12px;border-bottom:1px solid var(--border)">
+    <!-- Voter + skip in one row -->
+    <div style="margin-bottom:8px">
+      <div class="voter-hero" id="voterHero" style="padding:14px 0 10px;margin:0;background:none;border:none;width:100%">
+        <div class="vh-label" style="font-size:0.65rem">NOW VOTING</div>
+        <div class="vh-name" id="voterHeroName" style="font-size:2rem;width:100%;text-align:center">—</div>
+        <div id="voterHeroSub" style="display:none;text-align:center;font-family:'Orbitron',monospace;font-size:0.7rem;letter-spacing:1px;color:rgba(0,0,0,0.5);margin-top:4px"></div>
+        <div id="voteTimerDisplay" style="display:none;font-family:'Orbitron',monospace;font-size:1.3rem;font-weight:700;text-align:center;margin-top:4px"></div>
+      </div>
+    </div>
+    <!-- Progress dots -->
+    <div class="voter-dots" id="voterDots" style="margin-bottom:10px"></div>
+    <!-- Vote options grid -->
+    <div class="vote-label" id="voteLabel" style="margin-bottom:8px;font-size:0.75rem">WHO IS THE IMPOSTER?</div>
+    <div class="vote-options" id="voteOptions"></div>
+  </div>
+
+  <!-- Bottom: clue recap always open, single column, oldest first -->
+  <div style="flex:1;overflow-y:auto;width:100%;padding:10px 14px 20px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div style="font-size:0.65rem;color:var(--muted);letter-spacing:2px">CLUE RECAP</div>
+      <button onclick="undoVote()" style="background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.3);color:#ffd700;border-radius:10px;padding:4px 10px;font-family:'Rajdhani',sans-serif;font-size:0.8rem;cursor:pointer">↩ UNDO VOTE</button>
+    </div>
+    <div id="recapBody"></div>
+  </div>
+</div>
+
+<!-- RESULTS — dramatic typewriter reveal -->
+<div class="screen" id="results">
+  <div class="reveal-stage" id="revealStage">
+    <div class="reveal-lines" id="revealLines"></div>
+    <!-- Vote breakdown — shown after reveal -->
+    <div id="voteBreakdown" style="display:none;width:100%;max-width:380px;margin-top:20px">
+      <div style="font-size:0.72rem;color:var(--muted);letter-spacing:2px;text-align:center;margin-bottom:10px">WHO VOTED FOR WHO</div>
+      <div id="voteBreakdownList" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+    <div class="reveal-actions" id="revealActions" style="display:none">
+      <button class="btn btn-primary" id="nextRoundBtn" onclick="nextRound()" style="max-width:360px;width:100%">NEXT ROUND ▶</button>
+      <button class="btn btn-danger"  id="endGameBtn"   onclick="showFinal()" style="max-width:360px;width:100%;display:none;margin-top:12px">SEE FINAL RESULTS</button>
+    </div>
+  </div>
+</div>
+
+<!-- FINAL -->
+<div class="screen" id="final">
+  <div class="trophy" id="finalTrophy">🕵️</div>
+  <div class="screen-title" id="finalTitle">GAME OVER</div>
+  <div class="survival-count" id="survivalCount">0</div>
+  <p class="survival-label" id="survivalLabel">rounds survived</p>
+  <div class="result-card" style="max-width:400px;width:100%">
+    <div id="finalStats"></div>
+  </div>
+  <button class="btn btn-primary" onclick="resetGame()" style="max-width:400px;width:100%;margin-top:12px">PLAY AGAIN</button>
+  <div style="height:20px"></div>
+</div>
+
+<script>
+const COLORS = ['#FF6B6B','#FFD93D','#6BCB77','#4D96FF','#FF922B','#CC5DE8','#20C997','#F06595','#74C0FC','#A9E34B'];
+
+
+// One big flat pool — picked randomly every game, never repeats within a session
+const VAGUE_CATEGORIES = [
+  { hint:"Something You Eat", words:[
+    "Pizza","Burger","Hot Dog","Sandwich","Taco","Burrito","Fried Chicken","Chicken Wings","Grilled Cheese","Mac and Cheese",
+    "Spaghetti","Meatball","Lasagna","French Fries","Onion Rings","Nachos","Popcorn","Pretzel","Corn Dog","Waffle",
+    "Pancake","French Toast","Scrambled Eggs","Bacon","Sausage","Fried Egg","Omelet","Hash Brown","Toast","Bagel",
+    "Donut","Muffin","Cupcake","Brownie","Cookie","Cake","Slice of Pie","Ice Cream","Popsicle","Cotton Candy",
+    "Candy Bar","Lollipop","Gummy Bear","Jelly Bean","Marshmallow","Chocolate","Caramel","Candy Cane","Gum","Chips",
+    "Popcorn","Pretzel","Crackers","Cheese","String Cheese","Peanut Butter","Jelly","Honey","Butter","Jam",
+    "Apple","Banana","Orange","Grapes","Strawberry","Watermelon","Pineapple","Mango","Cherry","Peach",
+    "Blueberry","Raspberry","Lemon","Lime","Coconut","Avocado","Tomato","Carrot","Corn","Broccoli",
+    "Potato","Sweet Potato","Cucumber","Lettuce","Onion","Garlic","Pepper","Mushroom","Spinach","Celery",
+    "Ramen","Soup","Salad","Steak","Ribs","Shrimp","Fish","Salmon","Tuna","Lobster",
+    "Birthday Cake","Chocolate Cake","Cheesecake","Apple Pie","Pumpkin Pie","Cinnamon Roll","Banana Split","Sundae","Milkshake","Snow Cone",
+    "Red Apple","Green Apple","Frozen Pizza","Cheese Pizza","Pepperoni Pizza","Fried Rice","Spring Roll","Egg Roll","Sushi","Ramen Noodles",
+    "Peanut Butter and Jelly","Grilled Cheese Sandwich","Chicken Nuggets","Fish Sticks","Macaroni","Spaghetti and Meatballs","Tomato Soup","Chicken Soup","Beef Stew","Clam Chowder"
+  ]},
+  { hint:"Something You Drink", words:[
+    "Water","Milk","Orange Juice","Apple Juice","Lemonade","Hot Chocolate","Coffee","Tea","Soda","Root Beer",
+    "Grape Juice","Smoothie","Milkshake","Chocolate Milk","Iced Tea","Limeade","Fruit Punch","Sports Drink","Energy Drink","Coconut Water",
+    "Cherry Juice","Pineapple Juice","Cranberry Juice","Mango Juice","Watermelon Juice","Strawberry Smoothie","Banana Smoothie","Vanilla Milkshake","Chocolate Milkshake","Strawberry Milkshake",
+    "Bubble Tea","Hot Tea","Iced Coffee","Slushie","Cherry Slushie","Blue Raspberry Slushie","Grape Soda","Orange Soda","Cream Soda","Ginger Ale"
+  ]},
+  { hint:"An Animal", words:[
+    "Dog","Cat","Horse","Elephant","Lion","Tiger","Bear","Monkey","Shark","Eagle",
+    "Snake","Rabbit","Cow","Pig","Chicken","Duck","Fish","Wolf","Fox","Deer",
+    "Frog","Turtle","Parrot","Penguin","Giraffe","Zebra","Hippo","Rhino","Gorilla","Chimpanzee",
+    "Crocodile","Alligator","Dolphin","Whale","Octopus","Jellyfish","Crab","Lobster","Starfish","Seahorse",
+    "Butterfly","Ladybug","Bee","Ant","Spider","Caterpillar","Dragonfly","Firefly","Grasshopper","Cricket",
+    "Flamingo","Peacock","Toucan","Owl","Hawk","Seagull","Robin","Pigeon","Swan","Goose",
+    "Goldfish","Hamster","Guinea Pig","Lizard","Chameleon","Gecko","Panda","Koala","Kangaroo","Platypus",
+    "Polar Bear","Arctic Fox","Snow Leopard","Red Fox","Bald Eagle","Blue Whale","Great White Shark","Clownfish","Sea Turtle","Hummingbird",
+    "Baby Duck","Baby Chick","Puppy","Kitten","Piglet","Lamb","Calf","Foal","Bunny","Duckling"
+  ]},
+  { hint:"A Place You Go", words:[
+    "School","Hospital","Airport","Mall","Restaurant","Gym","Church","Library","Hotel","Zoo",
+    "Beach","Park","Farm","Museum","Movie Theater","Playground","Supermarket","Gas Station","Pharmacy","Bank",
+    "Barbershop","Dentist","Doctor's Office","Police Station","Fire Station","Post Office","Bowling Alley","Arcade","Aquarium","Stadium",
+    "Swimming Pool","Water Park","Amusement Park","Roller Skating Rink","Ice Skating Rink","Mini Golf Course","Laser Tag","Trampoline Park","Escape Room","Haunted House",
+    "Coffee Shop","Bakery","Pizza Shop","Food Truck","Candy Store","Toy Store","Pet Store","Bookstore","Shoe Store","Clothing Store",
+    "Campsite","Cabin","Beach House","Hotel Room","Elevator","Rooftop","Parking Lot","Bus Stop","Train Station","Subway"
+  ]},
+  { hint:"Something That Moves", words:[
+    "Car","Truck","Motorcycle","Bicycle","Airplane","Helicopter","Boat","Train","Bus","Submarine",
+    "Rocket","Tractor","Ambulance","Fire Truck","Police Car","Taxi","School Bus","Ice Cream Truck","Food Truck","Garbage Truck",
+    "Race Car","Sports Car","Monster Truck","Pickup Truck","Skateboard","Scooter","Roller Skates","Canoe","Kayak","Sailboat",
+    "Speed Boat","Cruise Ship","Hot Air Balloon","Blimp","Jet Ski","Snowmobile","Go-Kart","Dirt Bike","Electric Scooter","Segway",
+    "Wagon","Stroller","Shopping Cart","Wheelchair","Forklift","Crane Truck","Dump Truck","Cement Mixer","Tow Truck","Double Decker Bus"
+  ]},
+  { hint:"Found at Home", words:[
+    "Chair","Table","Bed","Sofa","Lamp","Mirror","Fridge","Microwave","Washing Machine","TV",
+    "Toaster","Fan","Clock","Vacuum","Pillow","Shower","Toilet","Bathtub","Sink","Stove",
+    "Oven","Dishwasher","Blender","Coffee Maker","Remote Control","Phone Charger","Light Switch","Door","Window","Stairs",
+    "Couch","Recliner","Bunk Bed","Bean Bag","Hammock","Bookshelf","Dresser","Nightstand","Desk","Office Chair",
+    "Picture Frame","Rug","Curtain","Blinds","Candle","Blanket","Pillow","Sheets","Towel","Soap",
+    "Shampoo","Toothbrush","Hairbrush","Hair Dryer","Alarm Clock","Trash Can","Laundry Basket","Ironing Board","Mop","Broom"
+  ]},
+  { hint:"Found at School", words:[
+    "Pencil","Eraser","Ruler","Backpack","Notebook","Calculator","Scissors","Glue","Whiteboard","Desk",
+    "Lunch Box","Textbook","Crayon","Highlighter","Stapler","Globe","Compass","Report Card","Chalkboard","Hall Pass",
+    "Red Pen","Blue Pen","Marker","Sticky Note","Index Card","Folder","Binder","Pencil Case","Pencil Sharpener","Paper Clip",
+    "Locker","Trophy","Science Project","Art Project","Book Report","Spelling Test","Math Test","Gym Class","Recess","Field Trip",
+    "School Bus","Cafeteria","Library Book","Detention Slip","Star Sticker","Gold Star","Permission Slip","School Uniform","Backpack Strap","Water Bottle"
+  ]},
+  { hint:"Something You Wear", words:[
+    "Shoes","Jeans","T-Shirt","Jacket","Hat","Socks","Dress","Suit","Sweater","Boots",
+    "Gloves","Scarf","Sunglasses","Belt","Hoodie","Swimsuit","Pajamas","Tie","Shorts","Raincoat",
+    "Sneakers","Sandals","Flip Flops","Rain Boots","Snow Boots","High Heels","Slippers","Mittens","Earmuffs","Beanie",
+    "Baseball Cap","Cowboy Hat","Sun Hat","Helmet","Crown","Bow Tie","Suspenders","Overalls","Leggings","Skirt",
+    "Swim Trunks","Wetsuit","Superhero Cape","Halloween Costume","Apron","Lab Coat","Chef Hat","Graduation Cap","Wedding Dress","Tuxedo"
+  ]},
+  { hint:"Found in Nature", words:[
+    "Sun","Moon","Star","Cloud","Rain","Snow","Lightning","Rainbow","Tornado","Volcano",
+    "Mountain","River","Ocean","Lake","Waterfall","Cave","Island","Desert","Forest","Jungle",
+    "Tree","Flower","Grass","Leaf","Rock","Sand","Mud","Ice","Fog","Wind",
+    "Rose","Sunflower","Daisy","Tulip","Cactus","Mushroom","Pine Tree","Palm Tree","Oak Tree","Apple Tree",
+    "Acorn","Pine Cone","Seashell","Coral","Seaweed","Bamboo","Vine","Thorn","Berry","Seed",
+    "Full Moon","Shooting Star","Northern Lights","Sunset","Sunrise","Snowflake","Hailstone","Thundercloud","Tidal Wave","Earthquake",
+    "Red Rose","Yellow Sunflower","Green Grass","Blue Ocean","White Snow","Purple Flower","Orange Sunset","Pink Cloud","Brown Mud","Black Rock"
+  ]},
+  { hint:"Related to Sports", words:[
+    "Soccer Ball","Basketball","Baseball","Tennis Ball","Football","Volleyball","Hockey Puck","Golf Ball","Ping Pong Ball","Bowling Ball",
+    "Baseball Bat","Tennis Racket","Hockey Stick","Golf Club","Skateboard","Surfboard","Snowboard","Ski","Helmet","Knee Pad",
+    "Swimming Goggles","Swim Cap","Boxing Glove","Karate Belt","Wrestling Mat","Jump Rope","Hula Hoop","Frisbee","Badminton Racket","Ping Pong Paddle",
+    "Soccer Goal","Basketball Hoop","Baseball Diamond","Football Field","Tennis Court","Swimming Pool","Running Track","Bowling Lane","Golf Course","Ice Rink",
+    "Referee","Scoreboard","Trophy","Gold Medal","Silver Medal","Blue Ribbon","Cheerleader","Bench","Dugout","Locker Room"
+  ]},
+  { hint:"Tech Related", words:[
+    "Phone","Laptop","Tablet","Charger","Headphones","Camera","Keyboard","Mouse","Screen","Speaker",
+    "Battery","Remote Control","Video Game","Controller","TV","Radio","Microphone","Printer","Scanner","Calculator",
+    "Smart Watch","Earbuds","Selfie Stick","Drone","Robot","3D Printer","VR Headset","Projector","Flash Drive","Hard Drive",
+    "Password","Emoji","Screenshot","Selfie","Video Call","Text Message","App","WiFi","Bluetooth","Notification",
+    "Gaming Chair","Mouse Pad","Webcam","Smart TV","Smart Speaker","Phone Case","Power Bank","USB Cable","Charging Pad","Ring Light"
+  ]},
+  { hint:"A Type of Person", words:[
+    "Doctor","Teacher","Police Officer","Firefighter","Chef","Pilot","Nurse","Lawyer","Farmer","Driver",
+    "Builder","Dentist","Soldier","Waiter","Scientist","Actor","Singer","Plumber","Mechanic","Barber",
+    "Mailman","Garbage Collector","Bus Driver","Taxi Driver","Lifeguard","Babysitter","Dog Walker","Clown","Magician","Juggler",
+    "Astronaut","Superhero","Princess","Knight","Pirate","Cowboy","Ninja","Wizard","Witch","Vampire",
+    "Baker","Butcher","Cashier","Librarian","Janitor","Coach","Referee","Trainer","Photographer","Reporter"
+  ]},
+  { hint:"An Event or Holiday", words:[
+    "Birthday Party","Christmas","Halloween","Easter","Thanksgiving","New Year","Valentine's Day","Fourth of July","Mother's Day","Father's Day",
+    "Wedding","Graduation","Prom","Baby Shower","Pool Party","Sleepover","Surprise Party","Costume Party","Game Night","Movie Night",
+    "Picnic","Barbecue","Camping Trip","Road Trip","Beach Day","Snow Day","Field Trip","School Play","Talent Show","Spelling Bee",
+    "Fireworks Show","Parade","Carnival","State Fair","Haunted House","Easter Egg Hunt","Trick or Treating","Christmas Morning","New Year's Eve Party","Super Bowl Party",
+    "Science Fair","Art Show","Bake Sale","Car Wash","Lemonade Stand","Race Day","Sports Game","Concert","Dance Recital","Graduation Party"
+  ]},
+  { hint:"A Game or Toy", words:[
+    "Lego","Play-Doh","Slime","Yo-Yo","Frisbee","Kite","Nerf Gun","Water Balloon","Silly String","Hula Hoop",
+    "Jump Rope","Bouncy Ball","Rubber Duck","Stuffed Animal","Action Figure","Barbie","Hot Wheels","Puzzle","Board Game","Card Game",
+    "Chess","Checkers","Monopoly","Scrabble","Jenga","Uno","Go Fish","Old Maid","Connect Four","Battleship",
+    "Video Game","Arcade Game","Pinball Machine","Claw Machine","Gumball Machine","Toy Train","Toy Car","Toy Plane","Toy Boat","Toy Robot",
+    "Swing Set","Slide","Sandbox","Trampoline","Skateboard","Scooter","Bike","Wagon","Sled","Snow Tube"
+  ]},
+  { hint:"Fantasy or Superhero", words:[
+    "Superman","Batman","Spider-Man","Iron Man","Wonder Woman","Captain America","The Hulk","Thor","Black Panther","Aquaman",
+    "Magic Wand","Wizard Hat","Dragon","Unicorn","Mermaid","Fairy","Giant","Goblin","Elf","Dwarf",
+    "Treasure Chest","Pirate Ship","Magic Carpet","Genie Lamp","Crystal Ball","Time Machine","Jetpack","Laser Gun","Cape","Mask",
+    "Castle","Tower","Dungeon","Sword","Shield","Bow and Arrow","Magic Potion","Spell Book","Invisibility Cloak","Flying Broomstick",
+    "Superhero Cape","Secret Identity","Sidekick","Villain","Superpower","X-Ray Vision","Super Speed","Flying","Telekinesis","Force Field"
+  ]},
+  { hint:"Science or Space", words:[
+    "Sun","Moon","Star","Planet","Rocket","Astronaut","Telescope","Microscope","Test Tube","Beaker",
+    "Magnet","Battery","Light Bulb","Thermometer","Compass","Volcano","Earthquake","Tornado","Hurricane","Tsunami",
+    "Dinosaur","Fossil","Meteor","Comet","Black Hole","Galaxy","Milky Way","Solar System","Saturn's Rings","Moon Rock",
+    "Robot","Laser","Experiment","Petri Dish","Magnifying Glass","Safety Goggles","Lab Coat","Science Fair","Baking Soda","Vinegar",
+    "T-Rex","Triceratops","Pterodactyl","Stegosaurus","Mammoth","Cave Man","Asteroid","Space Station","Mars Rover","Alien"
+  ]},
+  { hint:"Outdoor or Childhood Fun", words:[
+    "Snowball","Snowman","Snow Angel","Snow Fort","Sandcastle","Mud Pie","Leaf Pile","Puddle Jump","Tree Climbing","Hide and Seek",
+    "Tag","Freeze Tag","Four Square","Hopscotch","Dodge Ball","Capture the Flag","Tug of War","Sack Race","Three Legged Race","Egg and Spoon Race",
+    "Camping","Campfire","S'more","Tent","Sleeping Bag","Fishing","Swimming","Diving Board","Waterslide","Sprinkler",
+    "Garden Hose","Slip N Slide","Tire Swing","Tree House","Blanket Fort","Pillow Fight","Flashlight","Walkie Talkie","Bug Jar","Magnifying Glass",
+    "Bike Ride","Scooter Ride","Skateboard Trick","Roller Skates","Inline Skates","Ice Skating","Sledding","Snowboarding","Skiing","Snowshoeing",
+    "Lemonade Stand","Bake Sale","Car Wash","Paper Route","Dog Walking","Babysitting","Lawn Mowing","Raking Leaves","Shoveling Snow","Picking Apples"
+  ]},
+];
+
+// Flat pool for non-category mode
+const ALL_WORDS = VAGUE_CATEGORIES.flatMap(c => c.words);
+
+function pickWord() {
+  return ALL_WORDS[Math.floor(Math.random() * ALL_WORDS.length)];
+}
+
+function pickWordWithHint() {
+  const group = VAGUE_CATEGORIES[Math.floor(Math.random() * VAGUE_CATEGORIES.length)];
+  const word  = group.words[Math.floor(Math.random() * group.words.length)];
+  return { word, hint: group.hint };
+}
+
+let G = {};
+let numPlayers = 4, numImposters = 1, cluePlayerIdx = 0;
+
+// ── UNDO STACK ───────────────────────────────────────────
+let _undoStack = []; // array of { screen, G, cluePlayerIdx, label }
+
+function saveUndo(label) {
+  _undoStack.push({
+    label: label || 'action',
+    screen: document.querySelector('.screen.active')?.id || '',
+    cluePlayerIdx: cluePlayerIdx,
+    G: JSON.parse(JSON.stringify(G))
+  });
+  // Keep at most 20 snapshots
+  if (_undoStack.length > 20) _undoStack.shift();
+  updateUndoBtn();
+}
+
+function undoLastAction() {
+  if (_undoStack.length === 0) return;
+  const snap = _undoStack.pop();
+  G = snap.G;
+  cluePlayerIdx = snap.cluePlayerIdx;
+  updateUndoBtn();
+  // Re-render and navigate back to saved screen
+  const s = snap.screen;
+  showScreen(s);
+  if (s === 'clueround') { renderClueRound(); setTimeout(() => document.getElementById('clueInput')?.focus(), 100); }
+  else if (s === 'voting') { showVoting(); }
+  else if (s === 'reveal') { renderRevealList(); }
+  else if (s === 'results') { showResults._fromUndo = true; showScreen('results'); renderVoteBreakdown(); }
+}
+
+function updateUndoBtn() {
+  const btn = document.getElementById('globalUndoBtn');
+  if (!btn) return;
+  if (_undoStack.length === 0) {
+    btn.style.opacity = '0.25';
+    btn.style.pointerEvents = 'none';
+    btn.title = 'Nothing to undo';
+  } else {
+    btn.style.opacity = '1';
+    btn.style.pointerEvents = 'auto';
+    btn.title = 'Undo: ' + _undoStack[_undoStack.length - 1].label;
+  }
+}
+
+
+// ── TIMERS ──────────────────────────────────────────────
+let G_clueTimerSecs = 30;
+let G_voteTimerSecs = 30;
+let _clueTimerInterval = null;
+let _voteTimerInterval = null;
+let _clueSecsLeft = 0;
+let _voteSecsLeft = 0;
+
+function setClueTimer(secs) {
+  G_clueTimerSecs = secs;
+  document.querySelectorAll('[id^="ct_"]').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('ct_' + secs);
+  if (btn) btn.classList.add('active');
+}
+
+function setVoteTimer(secs) {
+  G_voteTimerSecs = secs;
+  document.querySelectorAll('[id^="vt_"]').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('vt_' + secs);
+  if (btn) btn.classList.add('active');
+}
+
+function startClueTimer() {
+  stopClueTimer();
+  if (!G_clueTimerSecs) return;
+  _clueSecsLeft = G_clueTimerSecs;
+  const d = document.getElementById('clueTimerDisplay');
+  if (!d) return;
+  d.style.display = 'block';
+  _updateClueDisplay();
+  _clueTimerInterval = setInterval(() => {
+    _clueSecsLeft--;
+    _updateClueDisplay();
+    if (_clueSecsLeft <= 0) { stopClueTimer(); if(navigator.vibrate)navigator.vibrate([200,100,200]); const _inp=document.getElementById("clueInput"); if(_inp&&_inp.value.trim()){submitClue();}else{if(_inp){_inp.placeholder="⏰ Time's up! Type clue or skip →";_inp.focus();}const _d=document.getElementById("clueTimerDisplay");if(_d){_d.textContent="0s";_d.style.color="var(--danger)";_d.style.display="block";}} }
+  }, 1000);
+}
+
+function stopClueTimer() {
+  clearInterval(_clueTimerInterval); _clueTimerInterval = null;
+  const d = document.getElementById('clueTimerDisplay');
+  if (d) d.style.display = 'none';
+}
+
+function _updateClueDisplay() {
+  const d = document.getElementById('clueTimerDisplay');
+  if (!d) return;
+  const m = Math.floor(_clueSecsLeft / 60), s = _clueSecsLeft % 60;
+  d.textContent = m > 0 ? `${m}:${String(s).padStart(2,'0')}` : `${_clueSecsLeft}s`;
+  const pct = G_clueTimerSecs ? _clueSecsLeft / G_clueTimerSecs : 1;
+  d.style.color = pct > 0.5 ? 'var(--success)' : pct > 0.25 ? '#ffd700' : 'var(--danger)';
+}
+
+function startVoteTimer(onExpire) {
+  stopVoteTimer();
+  if (!G_voteTimerSecs) return;
+  _voteSecsLeft = G_voteTimerSecs;
+  const d = document.getElementById('voteTimerDisplay');
+  if (!d) return;
+  d.style.display = 'block';
+  _updateVoteDisplay();
+  _voteTimerInterval = setInterval(() => {
+    _voteSecsLeft--;
+    _updateVoteDisplay();
+    if (_voteSecsLeft <= 0) { stopVoteTimer(); if (navigator.vibrate) navigator.vibrate([200,100,200]); if (onExpire) onExpire(); }
+  }, 1000);
+}
+
+function stopVoteTimer() {
+  clearInterval(_voteTimerInterval); _voteTimerInterval = null;
+  const d = document.getElementById('voteTimerDisplay');
+  if (d) d.style.display = 'none';
+}
+
+function _updateVoteDisplay() {
+  const d = document.getElementById('voteTimerDisplay');
+  if (!d) return;
+  const m = Math.floor(_voteSecsLeft / 60), s = _voteSecsLeft % 60;
+  d.textContent = m > 0 ? `${m}:${String(s).padStart(2,'0')}` : `${_voteSecsLeft}s`;
+  const pct = G_voteTimerSecs ? _voteSecsLeft / G_voteTimerSecs : 1;
+  d.style.color = pct > 0.5 ? '#fff' : pct > 0.25 ? '#ffd700' : 'var(--danger)';
+}
+
+/* SETUP */
+function toggleMoreOptions() {
+  const body  = document.getElementById('moreOptionsBody');
+  const arrow = document.getElementById('moreOptionsArrow');
+  const open  = body.style.display === 'none';
+  body.style.display  = open ? 'block' : 'none';
+  arrow.style.transform = open ? 'rotate(180deg)' : '';
+}
+
+function adj(type, d) {
+  if (type === 'imposters') {
+    const n = Math.max(_selectedNames.length, 2);
+    numImposters = Math.max(1, Math.min(Math.floor(n/2), numImposters + d));
+    document.getElementById('imposterCount').textContent = numImposters;
+  }
+}
+
+const CREW_PRIORITY = ['Sam','Shawn','Hass','Mosh','Gibby','Jacob','Eli','Nitz','Coach B','Chobani','Tomer','Ariel','Mike','Sabz','VBD'];
+const CREW = ['Sam','Shawn','Hass','Mosh','Gibby','Jacob','Eli','Nitz','Coach B','Chobani','Tomer','Ariel','Mike','Sabz','VBD','Adiel','B','Ben','Dalida','Daniel','David','Edwin','Eitan','Elan','Jess','Josh','Lauren','Nate','Sahand','Sean','Sham','Shlomo','Simona','Tamir','Tams','Yazdan','Yosef'];
+
+function renderPlayerInputs() { renderNamePicker(); }
+
+// ── NAME PICKER ─────────────────────────────────────────
+let _selectedNames = []; // [{name, color, origId}]
+
+function renderNamePicker() {
+  // Restore from _selectedNames
+  renderSelectedPlayers();
+  renderAlphaBar();
+  filterNamePicker();
+}
+
+function renderSelectedPlayers() {
+  const container = document.getElementById('selectedPlayers');
+  const countEl   = document.getElementById('selectedCount');
+  if (!container) return;
+  _selectedNames = _selectedNames.slice(0, 10);
+  numPlayers = _selectedNames.length;
+  container.innerHTML = '';
+  _selectedNames.forEach((p, i) => {
+    const tag = document.createElement('div');
+    tag.style.cssText = `display:flex;align-items:center;gap:6px;background:${p.color}22;border:2px solid ${p.color}88;border-radius:20px;padding:5px 10px 5px 8px;font-size:0.9rem;font-weight:700`;
+    tag.innerHTML = `<div style="width:22px;height:22px;border-radius:50%;background:${p.color};display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:900;color:#000">${p.name[0].toUpperCase()}</div><span style="color:${p.color}">${p.name}</span><button onclick="removePicked(${i})" style="background:none;border:none;color:${p.color};cursor:pointer;font-size:0.85rem;padding:0;line-height:1;opacity:0.7">✕</button>`;
+    container.appendChild(tag);
+  });
+  if (countEl) countEl.textContent = _selectedNames.length;
+  filterNamePicker(); // refresh available names
+}
+
+function removePicked(idx) {
+  _selectedNames.splice(idx, 1);
+  numPlayers = _selectedNames.length;
+  renderSelectedPlayers();
+}
+
+function renderAlphaBar() {
+  const bar = document.getElementById('alphaBar');
+  if (!bar) return;
+  bar.innerHTML = '';
+  const letters = [...new Set(CREW.map(n => n[0].toUpperCase()))].sort();
+  letters.forEach(l => {
+    const btn = document.createElement('button');
+    btn.textContent = l;
+    btn.style.cssText = `background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:7px 12px;font-size:1rem;font-weight:700;cursor:pointer`;
+    btn.onclick = () => {
+      document.getElementById('nameSearchInput').value = l;
+      filterNamePicker();
+      // scroll to grid
+      document.getElementById('namePickerGrid')?.scrollIntoView({behavior:'smooth',block:'nearest'});
+    };
+    bar.appendChild(btn);
+  });
+}
+
+function filterNamePicker() {
+  const grid = document.getElementById('namePickerGrid');
+  if (!grid) return;
+  const q = (document.getElementById('nameSearchInput')?.value || '').trim().toLowerCase();
+  const selected = _selectedNames.map(p => p.name);
+  const available = CREW.filter(n => !selected.includes(n) && (q === '' || n.toLowerCase().startsWith(q)));
+  
+  // Priority names first, then rest alphabetically
+  const priority = available.filter(n => CREW_PRIORITY.includes(n));
+  const rest = available.filter(n => !CREW_PRIORITY.includes(n)).sort((a,b)=>a.localeCompare(b));
+  const sorted = q === '' ? [...priority, ...rest] : available.sort((a,b)=>a.localeCompare(b));
+  
+  grid.innerHTML = '';
+  sorted.forEach(name => {
+    const btn = document.createElement('button');
+    btn.style.cssText = `background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:20px;padding:7px 14px;font-size:0.88rem;font-weight:600;cursor:pointer;transition:background 0.15s`;
+    btn.textContent = name;
+    btn.onclick = () => pickPlayerName(name);
+    grid.appendChild(btn);
+  });
+  // Show custom entry if typed something not in crew
+  const q2 = (document.getElementById('nameSearchInput')?.value || '').trim();
+  if (q2 && !CREW.includes(q2) && !selected.includes(q2)) {
+    const custom = document.createElement('button');
+    custom.style.cssText = `background:rgba(108,63,255,0.15);border:1px dashed var(--accent);color:var(--accent);border-radius:20px;padding:7px 14px;font-size:0.88rem;font-weight:600;cursor:pointer`;
+    custom.textContent = `+ Add "${q2}"`;
+    custom.onclick = () => pickPlayerName(q2);
+    grid.appendChild(custom);
+  }
+}
+
+function pickPlayerName(name) {
+  if (_selectedNames.length >= 10) return;
+  if (_selectedNames.find(p => p.name === name)) return;
+  // If new name not in crew, add it
+  if (!CREW.includes(name)) {
+    CREW.push(name);
+    saveCrewToStorage();
+    renderAlphaBar();
+  }
+  const idx   = _selectedNames.length;
+  const color = COLORS[idx % COLORS.length];
+  _selectedNames.push({ name, color, origId: idx });
+  document.getElementById('nameSearchInput').value = '';
+  numPlayers = _selectedNames.length;
+  renderSelectedPlayers();
+}
+
+
+function toggleMoreOptions() {
+  const body  = document.getElementById('moreOptionsBody');
+  const arrow = document.getElementById('moreOptionsArrow');
+  const open  = body.style.display === 'none';
+  body.style.display  = open ? 'block' : 'none';
+  arrow.style.transform = open ? 'rotate(180deg)' : '';
+}
+
+
+
+
+function backToSetup() {
+  // Preserve current players so they don't have to re-select
+  _selectedNames = G.players.map(p => ({ name: p.name, color: p.color, origId: p.id }));
+  numPlayers = _selectedNames.length;
+  showScreen('setup');
+  renderNamePicker();
+}
+
+function startGame() {
+  _undoStack = [];
+  updateUndoBtn();
+  if (_selectedNames.length < 3) { alert('You need at least 3 players to start!'); return; }
+  const players = _selectedNames.map((p, i) => ({
+    id: p.origId !== undefined ? p.origId : i,
+    name: p.name,
+    color: p.color
+  }));
+  const showCategory    = document.getElementById('toggleCategory').checked;
+  const imposterOnly    = document.getElementById('toggleImposterOnly').checked;
+  const knowEachOther   = document.getElementById('toggleKnowEachOther').checked;
+  const suddenDeath     = document.getElementById('toggleSuddenDeath').checked;
+  const hideVotes       = document.getElementById('toggleHideVotes').checked;
+  const beginnerMode    = document.getElementById('toggleBeginner').checked;
+  const forceVote       = document.getElementById('toggleForceVote').checked;
+  const { word, hint }  = pickWordWithHint();
+  const shuffled        = [...players].sort(() => Math.random() - 0.5);
+  const imposterIds     = shuffled.slice(0, numImposters).map(p => p.id);
+  G = { players, imposterIds, secretWord: word,
+        categoryHint: showCategory ? hint : null,
+        imposterOnly, knowEachOther, suddenDeath, hideVotes, beginnerMode, forceVote,
+        numImposters,
+        round: 1, roundsSurvived: 0,
+        allClues: [], roundClues: [], votes: {}, voterIndex: 0, currentVote: undefined,
+        revealedCards: [], eliminated: [], recapOpen: false, reorderMode: false, _revealReorder: [] };
+  showRevealPhase();
+}
+
+function removePlayer(pid) {
+  const wasImposter = G.imposterIds.includes(pid);
+  const wasRevealed = G.revealedCards.includes(pid);
+
+  // Remove from all lists
+  G.players       = G.players.filter(p => p.id !== pid);
+  G.revealedCards = G.revealedCards.filter(id => id !== pid);
+  G.imposterIds   = G.imposterIds.filter(id => id !== pid);
+  numPlayers      = G.players.length;
+
+  // If the removed player was a revealed imposter, assign a new imposter
+  // from the people who haven't revealed yet
+  if (wasImposter && wasRevealed) {
+    const unrevealed = G.players.filter(p =>
+      !G.eliminated.includes(p.id) &&
+      !G.revealedCards.includes(p.id) &&
+      !G.imposterIds.includes(p.id)
+    );
+    if (unrevealed.length > 0) {
+      // Shuffle and pick one randomly
+      const shuffled = [...unrevealed].sort(() => Math.random() - 0.5);
+      G.imposterIds.push(shuffled[0].id);
+    }
+  }
+
+  renderRevealList();
+}
+
+function showQuickSuggestions() {
+  const inp = document.getElementById('quickAddInput');
+  const box = document.getElementById('quickAddSug');
+  if (!inp || !box) return;
+  const q   = inp.value.trim().toLowerCase();
+  const usedNames = G.players.map(p => p.name);
+  const available = CREW.filter(n => !usedNames.includes(n));
+  const matches = q === '' ? available : available.filter(n => n.toLowerCase().startsWith(q));
+  if (matches.length === 0) { box.style.display='none'; return; }
+  box.innerHTML = matches.map(n =>
+    `<div class="sug-item" onmousedown="document.getElementById('quickAddInput').value='${n}';quickAddPlayer()">${n}</div>`
+  ).join('');
+  box.style.display = 'block';
+}
+
+function hideQuickSuggestions() {
+  setTimeout(() => { const b=document.getElementById('quickAddSug'); if(b) b.style.display='none'; }, 150);
+}
+
+function quickAddPlayer() {
+  const inp  = document.getElementById('quickAddInput');
+  const name = inp?.value.trim();
+  if (!name) return;
+  const newId    = Math.max(...G.players.map(p => p.id)) + 1;
+  const newColor = COLORS[newId % COLORS.length];
+  G.players.push({ id: newId, name, color: newColor });
+  numPlayers = G.players.length;
+
+  // Who hasn't revealed yet (excluding newly added player)
+  const unrevealed = G.players.filter(p =>
+    !G.eliminated.includes(p.id) &&
+    !G.revealedCards.includes(p.id)
+  );
+
+  // How many imposters are still needed among unrevealed players
+  // (existing revealed imposters keep their role)
+  const revealedImposters = G.imposterIds.filter(id => G.revealedCards.includes(id));
+  const impostorsNeeded = Math.max(0, G.numImposters - revealedImposters.length);
+
+  // Reshuffle only the unrevealed pool
+  const shuffled   = [...unrevealed].sort(() => Math.random() - 0.5);
+  const newImposters = shuffled.slice(0, impostorsNeeded).map(p => p.id);
+
+  // Final imposter list = revealed imposters + newly assigned ones
+  G.imposterIds = [...revealedImposters, ...newImposters];
+
+  inp.value = '';
+  document.getElementById('quickAddSug').style.display = 'none';
+  showRevealPhase();
+}
+
+/* REVEAL */
+function showRevealPhase() {
+  showScreen('reveal');
+
+  const revBanner = document.getElementById('revealCategoryBanner');
+  if (G.categoryHint && !G.imposterOnly) {
+    document.getElementById('revealCategoryText').textContent = G.categoryHint;
+    revBanner.style.display = 'block';
+  } else {
+    revBanner.style.display = 'none';
+  }
+
+  renderRevealList();
+}
+
+function renderRevealList() {
+  const grid = document.getElementById('playerGrid');
+  grid.innerHTML = '';
+  grid.style.cssText = 'width:100%;max-width:400px;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px';
+
+  const active = G.players.filter(p => !G.eliminated.includes(p.id));
+
+  active.forEach((p, idx) => {
+    const done = G.revealedCards.includes(p.id);
+    const card = document.createElement('div');
+    card.dataset.pid = p.id;
+    card.style.cssText = `position:relative;background:var(--surface);border:2px solid ${p.color+(done?'44':'cc')};border-radius:16px;padding:18px 10px 14px;text-align:center;${done?'opacity:0.45;':''}`;
+    card.innerHTML = `
+      <div style="position:absolute;top:7px;left:10px;font-family:'Orbitron',monospace;font-size:0.65rem;color:${p.color};font-weight:700">${idx+1}${ordinal(idx+1)}</div>
+      ${!done?`<button onclick="event.stopPropagation();removePlayer(${p.id})" style="position:absolute;top:5px;right:7px;background:none;border:none;color:var(--muted);font-size:0.85rem;cursor:pointer;padding:2px;line-height:1">✕</button>`:''}
+      <div style="width:50px;height:50px;border-radius:50%;background:${p.color};display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:1.2rem;font-weight:700;color:#000;margin:0 auto 8px">${p.name[0].toUpperCase()}</div>
+      <div style="font-size:0.9rem;font-weight:700;color:${done?'var(--muted)':'var(--text)'}">${p.name}</div>
+      ${done?'<div style="color:var(--success);font-size:0.8rem;margin-top:4px">✓ done</div>':''}
+    `;
+    card.onclick = () => {
+      if (G.reorderMode) { handleReorderTap(p.id); return; }
+      if (!done) { showWordCard(p.id); return; }
+      if (G.reviewMode) {
+        soundAlertRandom();
+        G.revealedCards = G.revealedCards.filter(id => id !== p.id);
+        showWordCard(p.id);
+        return;
+      }
+      if (confirm(`${p.name} already revealed their card.\n\nOpen again? Everyone will hear an alert.`)) {
+        soundAlert();
+        G.revealedCards = G.revealedCards.filter(id => id !== p.id);
+        showWordCard(p.id);
+      }
+    };
+    grid.appendChild(card);
+  });
+
+  const allDone = active.every(p => G.revealedCards.includes(p.id));
+  document.getElementById('startRoundBtn').style.display = allDone ? 'block' : 'none';
+  document.getElementById('reviewBtn').style.display     = allDone ? 'block' : 'none';
+  if (allDone && G.reviewMode) {
+    document.getElementById('reviewBtn').textContent = '✕ EXIT REVIEW';
+    document.getElementById('reviewBtn').style.borderColor = 'var(--danger)';
+    document.getElementById('reviewBtn').style.color = 'var(--danger)';
+  } else {
+    document.getElementById('reviewBtn').textContent = '🔍 REVIEW CARDS';
+    document.getElementById('reviewBtn').style.borderColor = 'var(--accent2)';
+    document.getElementById('reviewBtn').style.color = 'var(--accent2)';
+  }
+
+  // Reorder mode UI
+  const reorderBtn = document.getElementById('revealReorderBtn');
+  if (reorderBtn) {
+    if (G.reorderMode) {
+      reorderBtn.textContent = '✓ DONE REORDERING';
+      reorderBtn.style.borderColor = 'var(--success)';
+      reorderBtn.style.color = 'var(--success)';
+      // Show hint
+      document.getElementById('revealSubtitle').innerHTML = '<span style="color:var(--accent2)">Tap players in the new order (1st, 2nd...)</span>';
+    } else {
+      reorderBtn.textContent = '↕ SET ORDER';
+      reorderBtn.style.borderColor = 'var(--accent)';
+      reorderBtn.style.color = 'var(--accent)';
+      document.getElementById('revealSubtitle').innerHTML = 'Each player taps their own name to see their secret word.';
+    }
+  }
+
+  // In reorder mode, show order numbers as user taps
+  if (G.reorderMode) {
+    const cards = [...grid.querySelectorAll('[data-pid]')];
+    cards.forEach(card => {
+      const pid = parseInt(card.dataset.pid);
+      const orderIdx = (G._revealReorder||[]).indexOf(pid);
+      const numEl = card.querySelector('[data-ordernum]');
+      const num = orderIdx + 1;
+      // Update the order badge
+      const badge = card.querySelector('div:first-child');
+      if (badge) {
+        if (orderIdx !== -1) {
+          badge.style.color = 'var(--text)';
+          badge.style.fontSize = '0.85rem';
+          badge.textContent = num + ordinal(num);
+          card.style.opacity = '1';
+          card.style.border = `2px solid ${G.players.find(p=>p.id===pid)?.color||'#fff'}`;
+        } else {
+          badge.textContent = '?';
+          badge.style.color = 'var(--muted)';
+          card.style.opacity = '0.5';
+        }
+      }
+    });
+  }
+}
+
+// ══════════════════════════════════════════════
+// UNIFIED REORDER MODAL
+// ══════════════════════════════════════════════
+let _reorderCtx = null;
+let _reorderModalOrder = [];
+
+function toggleRevealReorder() { openReorderModal('reveal'); }
+function openMidClueReorder()  { openReorderModal('midclue'); }
+function closeMidClueReorder() { closeReorderModal(true); }
+function toggleInlineReorder() { openReorderModal('inline'); }
+let _inlineReorderOrder = null;
+
+function openReorderModal(ctx) {
+  _reorderCtx = ctx;
+  const active = G.players.filter(p => !G.eliminated.includes(p.id));
+  _reorderModalOrder = active.map(p => p.id);
+  renderReorderModal();
+  const modal = document.getElementById('reorderModal');
+  modal.style.display = 'flex';
+  const sheet = modal.querySelector('div');
+  sheet.style.transition = 'none';
+  sheet.style.transform = 'translateY(100%)';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    sheet.style.transition = 'transform 0.28s cubic-bezier(0.32,0.72,0,1)';
+    sheet.style.transform = 'translateY(0)';
+  }));
+}
+
+function closeReorderModal(apply) {
+  const modal = document.getElementById('reorderModal');
+  const sheet = modal.querySelector('div');
+  sheet.style.transition = 'transform 0.25s cubic-bezier(0.32,0.72,0,1)';
+  sheet.style.transform = 'translateY(100%)';
+  setTimeout(() => {
+    modal.style.display = 'none';
+    sheet.style.transform = '';
+    if (apply && _reorderModalOrder.length > 0) {
+      const eliminated = G.players.filter(p => G.eliminated.includes(p.id));
+      G.players = [..._reorderModalOrder.map(id => G.players.find(p => p.id === id)).filter(Boolean), ...eliminated];
+      if (_reorderCtx === 'midclue' || _reorderCtx === 'inline') {
+        cluePlayerIdx = 0;
+        renderClueRound();
+        document.getElementById('clueInput') && document.getElementById('clueInput').focus();
+      } else if (_reorderCtx === 'reveal') {
+        renderRevealList();
+      }
+    }
+  }, 260);
+}
+
+function renderReorderModal() {
+  const list = document.getElementById('reorderModalList');
+  if (!list) return;
+  list.innerHTML = '';
+  const ordered = _reorderModalOrder.map(id => G.players.find(p => p.id === id)).filter(Boolean);
+  ordered.forEach((p, idx) => {
+    const row = document.createElement('div');
+    row.dataset.pid = p.id;
+    row.style.cssText = 'display:flex;align-items:center;gap:14px;background:' + p.color + '14;border:2px solid ' + p.color + '44;border-radius:16px;padding:12px 14px;user-select:none;touch-action:none;margin-bottom:8px;';
+    row.innerHTML =
+      '<div style="width:36px;height:36px;border-radius:50%;background:' + p.color + ';display:flex;align-items:center;justify-content:center;font-family:Orbitron,monospace;font-size:1rem;font-weight:900;color:#000;flex-shrink:0">' + (idx+1) + '</div>' +
+      '<span style="flex:1;font-weight:700;font-size:1.05rem;color:var(--text)">' + p.name + '</span>' +
+      '<span class="drag-handle" style="font-size:1.6rem;color:' + p.color + ';opacity:0.45;padding:0 6px;cursor:grab;touch-action:none">☰</span>';
+    list.appendChild(row);
+  });
+  initDragSortList(list, function(newOrder) {
+    _reorderModalOrder = newOrder.map(function(r){ return r.dataset.pid; });
+    renderReorderModal();
+    if (navigator.vibrate) navigator.vibrate(15);
+  });
+}
+
+function initDragSortList(list, onReorder) {
+  let dragging = null, ghost = null, placeholder = null, offsetY = 0;
+  function getClientY(e) { return e.touches ? e.touches[0].clientY : e.clientY; }
+  function getRows() { return [...list.querySelectorAll('[data-pid]')]; }
+
+  function onDown(e) {
+    const handle = e.target.closest('.drag-handle');
+    if (!handle) return;
+    e.preventDefault();
+    const row = handle.closest('[data-pid]');
+    if (!row) return;
+    dragging = row;
+    const rect = row.getBoundingClientRect();
+    offsetY = getClientY(e) - rect.top;
+    ghost = row.cloneNode(true);
+    ghost.style.cssText += ';position:fixed;left:' + rect.left + 'px;top:' + rect.top + 'px;width:' + rect.width + 'px;z-index:9999;opacity:0.92;box-shadow:0 12px 40px #000c;pointer-events:none;transition:none;';
+    document.body.appendChild(ghost);
+    placeholder = document.createElement('div');
+    placeholder.style.cssText = 'height:' + rect.height + 'px;border:2px dashed var(--accent);border-radius:16px;background:rgba(108,63,255,0.06);box-sizing:border-box;margin-bottom:8px;';
+    row.replaceWith(placeholder);
+    document.addEventListener('touchmove', onMove, {passive:false});
+    document.addEventListener('touchend', onUp);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }
+
+  function onMove(e) {
+    if (!ghost) return;
+    e.preventDefault();
+    const cy = getClientY(e);
+    ghost.style.top = (cy - offsetY) + 'px';
+    const siblings = getRows().filter(r => r !== placeholder);
+    let best = null, bestDist = Infinity;
+    siblings.forEach(r => {
+      const box = r.getBoundingClientRect();
+      const mid = box.top + box.height / 2;
+      const d = Math.abs(cy - mid);
+      if (d < bestDist) { bestDist = d; best = {r, above: cy < mid}; }
+    });
+    if (best) { best.above ? list.insertBefore(placeholder, best.r) : list.insertBefore(placeholder, best.r.nextSibling); }
+    else if (!siblings.length) { list.appendChild(placeholder); }
+  }
+
+  function onUp() {
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend', onUp);
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    if (!dragging || !ghost || !placeholder) return;
+    placeholder.replaceWith(dragging);
+    ghost.remove(); ghost = null;
+    const result = getRows();
+    dragging = null; placeholder = null;
+    onReorder(result);
+  }
+
+  list.addEventListener('touchstart', onDown, {passive:false});
+  list.addEventListener('mousedown', onDown);
+}
+
+function ordinal(n) { if (n===1) return 'st'; if (n===2) return 'nd'; if (n===3) return 'rd'; return 'th'; }
+
+
+/* WORD CARD */
+let _cardPid = null, _cardShown = false;
+
+function showWordCard(pid) {
+  _cardPid = pid; _cardShown = false;
+  const p = G.players.find(x => x.id === pid);
+
+  const banner = document.getElementById('wcBanner');
+  banner.style.background = p.color + '33';
+  banner.style.border = `2px solid ${p.color}66`;
+  document.getElementById('wcName').textContent = p.name;
+  document.getElementById('wcName').style.color = p.color;
+
+  // Reset to hidden state
+  document.getElementById('wcHidden').style.display   = 'block';
+  document.getElementById('wcRevealed').style.display = 'none';
+  document.getElementById('wcCard').className = 'card-wrap card-hidden';
+
+  // Show back button if in mid-game review
+  const inReview = G._returnScreen === 'clueround';
+  document.getElementById('wcBackBtn').style.display       = inReview ? 'block' : 'none';
+  document.getElementById('wcHiddenBackBtn').style.display = inReview ? 'block' : 'none';
+
+  showScreen('wordcard');
+}
+
+function revealCard() {
+  if (_cardShown) return;
+  _cardShown = true;
+  const isImposter = G.imposterIds.includes(_cardPid);
+  const p = G.players.find(x => x.id === _cardPid);
+
+  const content = document.getElementById('wcWordContent');
+  const revealedCard = document.getElementById('wcRevealedCard');
+
+  if (isImposter) {
+    revealedCard.className = 'card-wrap card-imposter';
+    let coHTML = '';
+    if (G.knowEachOther && G.imposterIds.length > 1) {
+      const others = G.players.filter(x => G.imposterIds.includes(x.id) && x.id !== _cardPid);
+      coHTML = `<div style="margin-top:8px;font-size:0.8rem;color:rgba(255,255,255,0.7)">Partner: ${others.map(o=>`<span style="color:${o.color};font-weight:700">${o.name}</span>`).join(' & ')}</div>`;
+    }
+    let catHTML = G.categoryHint ? `<div style="margin-top:6px;font-size:0.75rem;color:rgba(255,255,255,0.5)">Hint: <strong style="color:rgba(255,255,255,0.75)">${G.categoryHint}</strong></div>` : '';
+    content.innerHTML = `<div class="word-text imposter-color" style="margin-bottom:0">🎭 IMPOSTER</div>${coHTML}${catHTML}`;
+  } else {
+    revealedCard.className = 'card-wrap card-word';
+    const catLine = (G.categoryHint && !G.imposterOnly)
+      ? `<div style="font-size:0.72rem;color:rgba(0,255,170,0.55);margin-top:6px;letter-spacing:1px">${G.categoryHint}</div>` : '';
+    content.innerHTML = `<div class="word-text word-color" style="margin-bottom:0">${G.secretWord}</div>${catLine}`;
+  }
+
+  document.getElementById('wcHidden').style.display   = 'none';
+  document.getElementById('wcRevealed').style.display = 'block';
+}
+
+function gotIt() {
+  if (!G.revealedCards.includes(_cardPid)) G.revealedCards.push(_cardPid);
+
+  // If coming from mid-game review, go back to review grid
+  if (G._returnScreen === 'clueround') {
+    openMidGameReview();
+    return;
+  }
+
+  const active  = G.players.filter(p => !G.eliminated.includes(p.id));
+  const allDone = active.every(p => G.revealedCards.includes(p.id));
+
+  if (allDone) { showRevealPhase(); return; }
+  if (!G.beginnerMode) { showRevealPhase(); return; }
+
+  const p = G.players.find(x => x.id === _cardPid);
+  document.getElementById('handoffMsg').innerHTML =
+    `<strong style="color:var(--text)">${p.name}</strong> is done.<br>Pass the phone to the next player.`;
+  document.getElementById('handoffContinueBtn').style.background = '';
+  document.getElementById('handoffContinueBtn').style.color = '';
+  document.getElementById('handoffContinueBtn').style.boxShadow = '';
+  showScreen('handoff');
+}
+
+function handoffContinue() {
+  showRevealPhase();
+}
+
+function handoffGoBack() {
+  showScreen('reveal');
+}
+
+function backFromVoting() {
+  if (!confirm('Go back to clue round? Votes cast so far will be lost.')) return;
+  G.voterIndex = 0; G.votes = {}; G.voteLog = []; G.currentVote = undefined;
+  showScreen('clueround');
+  renderClueRound();
+  document.getElementById('clueInput').focus();
+}
+
+function backToVoting() {
+  if (!confirm('Undo this result and go back to voting?')) return;
+  if (G.eliminated.length > 0) G.eliminated.pop();
+  G.voterIndex = 0; G.votes = {}; G.voteLog = []; G.currentVote = undefined;
+  showVoting();
+}
+
+function editClueEntry(globalIdx) {
+  const entry = G.allClues[globalIdx];
+  if (!entry) return;
+  const p = G.players.find(x => x.id === entry.playerId);
+  const current = (entry.clue === '—') ? '' : entry.clue;
+  const newClue = prompt('Edit clue for ' + (p ? p.name : 'player') + ':', current);
+  if (newClue === null) return;
+  const trimmed = newClue.trim();
+  entry.clue = trimmed || '—';
+  const rc = G.roundClues.find(c => c === entry || (c.playerId === entry.playerId && c.round === entry.round));
+  if (rc) rc.clue = entry.clue;
+  renderClueRound();
+}
+
+function skipClueEntry() {
+  saveUndo('skip clue');
+  stopClueTimer();
+  const active = G.players.filter(p => !G.eliminated.includes(p.id));
+  const cur = active[cluePlayerIdx % active.length];
+  const entry = { playerId: cur.id, name: cur.name, clue: '—', round: G.round };
+  G.roundClues.push(entry);
+  if (!G.allClues) G.allClues = [];
+  G.allClues.push(entry);
+  document.getElementById('clueInput').value = '';
+  cluePlayerIdx++;
+  renderClueRound();
+  document.getElementById('clueInput').focus();
+  if (G.roundClues.length >= active.length) {
+    document.getElementById('clueInput').blur();
+    setTimeout(() => {
+      if (G.forceVote) { goToVoting(); }
+      else { document.getElementById('clueendRound').textContent = 'ROUND ' + G.round + ' COMPLETE'; showScreen('clueend'); }
+    }, 400);
+  }
+}
+
+/* CLUE ROUND */
+let historyOpen = false;
+
+function startClueRound() {
+  // Safety check — if no imposters, restart reveal with same players
+  const active = G.players.filter(p => !G.eliminated.includes(p.id));
+  const activeImposters = G.imposterIds.filter(id => !G.eliminated.includes(id));
+  if (activeImposters.length === 0) {
+    // Reset all revealed cards and reshuffle imposters
+    G.revealedCards = [];
+    const shuffled = [...active].sort(() => Math.random() - 0.5);
+    G.imposterIds  = shuffled.slice(0, G.numImposters).map(p => p.id);
+    alert('No imposter in the game — reshuffling and restarting the reveal!');
+    showRevealPhase();
+    return;
+  }
+
+  G.roundClues = []; cluePlayerIdx = 0; G._returnScreen = null;
+  // Shuffle active players each round
+  const _ap = G.players.filter(p=>!G.eliminated.includes(p.id));
+  const _ep = G.players.filter(p=>G.eliminated.includes(p.id));
+  G.players = [..._ap.sort(()=>Math.random()-0.5),..._ep];
+
+  // Show review button only if no clues given yet in the whole game
+  const reviewBtnClue = document.getElementById('clueRoundReviewBtn');
+  if (reviewBtnClue) reviewBtnClue.style.display = G.allClues.length === 0 ? '' : 'none';
+  document.getElementById('roundBadge').textContent = `ROUND ${G.round}`;
+  const n = G.imposterIds.length;
+  document.getElementById('imposterCountBadge').textContent = `${n} IMPOSTER${n>1?'S':''}`;
+
+  const banner = document.getElementById('categoryBanner');
+  if (G.categoryHint && !G.imposterOnly) {
+    document.getElementById('categoryBannerText').textContent = G.categoryHint;
+    banner.style.display = 'block';
+  } else {
+    banner.style.display = 'none';
+  }
+
+  renderClueRound();
+  showScreen('clueround');
+  const inp = document.getElementById('clueInput');
+  inp.focus(); inp.click();
+}
+
+function renderClueRound() {
+  const active = G.players.filter(p => !G.eliminated.includes(p.id));
+
+  // Rebuild history — always visible, no toggle
+  const body = document.getElementById('clueHistoryBody');
+  body.innerHTML = '';
+  const rounds = {};
+  G.allClues.forEach(c => { if (!rounds[c.round]) rounds[c.round]=[]; rounds[c.round].push(c); });
+  const label = document.getElementById('clueHistoryLabel');
+  if (G.allClues.length === 0) {
+    label.textContent = 'CLUE HISTORY';
+    body.innerHTML = `<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:20px 0">Clues will appear here as players speak</div>`;
+  } else {
+    label.textContent = `CLUE HISTORY — ${G.allClues.length} clue${G.allClues.length>1?'s':''}`;
+    Object.keys(rounds).sort((a,b)=>a-b).forEach(r => {
+      const lbl = document.createElement('div');
+      lbl.className = 'ch-round-label';
+      lbl.textContent = `— ROUND ${r} —`;
+      body.appendChild(lbl);
+      let clueNum = 0;
+      rounds[r].forEach(c => {
+        clueNum++;
+        const p = G.players.find(x => x.id === c.playerId);
+        const globalIdx = G.allClues.indexOf(c);
+        const row = document.createElement('div');
+        row.className = 'ch-entry';
+        row.style.borderLeftColor = p.color;
+        const isEmpty = !c.clue || c.clue === '—';
+        row.innerHTML = `<div class="ch-avatar" style="background:${p.color}">${p.name[0].toUpperCase()}</div><div class="ch-name" style="color:${p.color}"><span style="opacity:0.5;font-size:0.68rem;margin-right:2px">${clueNum}.</span>${p.name}</div><div class="ch-word" style="${isEmpty ? 'color:var(--muted);font-style:italic' : ''}">${isEmpty ? 'tap ✏️ to add' : c.clue}</div><button onclick="editClueEntry(${globalIdx})" style="background:none;border:none;cursor:pointer;font-size:0.85rem;padding:2px 4px;opacity:0.45;flex-shrink:0">✏️</button>`;
+        body.appendChild(row);
+      });
+    });
+  }
+
+  // Update current player bar
+  const cur = active[cluePlayerIdx % active.length];
+  const bar = document.getElementById('currentPlayerBar');
+  bar.style.background = cur.color + '22';
+  bar.style.borderLeft = `3px solid ${cur.color}`;
+  document.getElementById('cpDot').style.background = cur.color;
+  document.getElementById('cpName').textContent = cur.name;
+  document.getElementById('cpName').style.color = cur.color;
+  const prog = cluePlayerIdx < active.length ? `${cluePlayerIdx+1} of ${active.length}` : 'Round again!';
+  document.getElementById('cpTurn').textContent = prog;
+  document.getElementById('clueInput').placeholder = `${cur.name}'s clue...`;
+  // Start clue timer for this player
+  startClueTimer();
+}
+
+function submitClue() {
+  const input = document.getElementById('clueInput');
+  const text  = input.value.trim();
+  if (!text) return;
+  stopClueTimer();
+  saveUndo('clue: ' + text);
+  const active = G.players.filter(p => !G.eliminated.includes(p.id));
+  const cur    = active[cluePlayerIdx % active.length];
+  const entry  = { playerId: cur.id, name: cur.name, clue: text, round: G.round };
+  G.roundClues.push(entry);
+  G.allClues.push(entry);
+  input.value = '';
+  cluePlayerIdx++;
+  renderClueRound();
+  document.getElementById('clueInput').focus();
+
+  // Hide the mid-game review button after the very first clue ever given
+  if (G.allClues.length > 0) {
+    const reviewBtnClue = document.getElementById('clueRoundReviewBtn');
+    if (reviewBtnClue) reviewBtnClue.style.display = 'none';
+  }
+
+  // Once every active player has given a clue this round
+  if (G.roundClues.length >= active.length) {
+    document.getElementById('clueInput').blur();
+    setTimeout(() => {
+      if (G.forceVote) {
+        goToVoting();
+      } else {
+        document.getElementById('clueendRound').textContent = `ROUND ${G.round} COMPLETE`;
+        showScreen('clueend');
+      }
+    }, 400);
+  }
+}
+
+function continueClues() {
+  saveUndo('start round ' + (G.round + 1));
+  // Start another clue round without voting
+  G.round++;
+  G.roundClues = [];
+  cluePlayerIdx = 0;
+  startClueRound();
+}
+
+function undoVote() {
+  if (G.voterIndex === 0) return; // nothing to undo
+  G.voterIndex--;
+  const last = G.voteLog?.pop();
+  if (last) {
+    const key = last.targetId;
+    if (G.votes[key] > 0) G.votes[key]--;
+  }
+  showVoting();
+}
+
+function goToVoting() {
+  saveUndo('go to voting');
+  // Close the keyboard before going to voting
+  document.getElementById('clueInput').blur();
+  G.voterIndex = 0; G.votes = {}; G.currentVote = undefined; G.voteWasSkipped = false; G.voteLog = [];
+  showVoting();
+}
+
+function skipWholeVote() {
+  G.votes = { skip: G.players.filter(p => !G.eliminated.includes(p.id)).length };
+  G.voteWasSkipped = true;
+  showResults();
+}
+
+/* VOTING */
+function showVoting() {
+  const active = G.players.filter(p => !G.eliminated.includes(p.id));
+  const votesPerVoter = G.numImposters || 1;
+  const totalVoteTurns = active.length * votesPerVoter;
+  if (G.voterIndex >= totalVoteTurns) { showResults(); return; }
+  const voterPlayerIdx = Math.floor(G.voterIndex / votesPerVoter);
+  const voteNum = (G.voterIndex % votesPerVoter) + 1;
+  const voter = active[voterPlayerIdx];
+  G.currentVote = undefined;
+
+  const hero = document.getElementById('voterHero');
+  hero.style.background = `linear-gradient(160deg, ${voter.color}ee 0%, ${voter.color}99 100%)`;
+  hero.style.borderRadius = '14px';
+  hero.style.padding = '14px 16px 12px';
+  hero.style.marginBottom = '10px';
+  document.getElementById('voterHeroName').textContent = voter.name;
+  document.getElementById('voterHeroName').style.color = '#000';
+  const subEl = document.getElementById('voterHeroSub');
+  if (subEl) { subEl.style.display = votesPerVoter > 1 ? 'block' : 'none'; if (votesPerVoter > 1) subEl.textContent = 'Vote ' + voteNum + ' of ' + votesPerVoter; }
+  const vl = document.getElementById('voteLabel');
+  if (vl) vl.textContent = votesPerVoter > 1 ? 'VOTE ' + voteNum + ' OF ' + votesPerVoter + ' — WHO IS AN IMPOSTER?' : 'WHO IS THE IMPOSTER?';
+
+  const dots = document.getElementById('voterDots');
+  dots.innerHTML = '';
+  active.forEach((p, i) => {
+    const d = document.createElement('div');
+    d.className = 'vdot ' + (i < voterPlayerIdx ? 'done' : i === voterPlayerIdx ? 'active' : 'waiting');
+    d.style.background = p.color;
+    d.style.borderColor = i === voterPlayerIdx ? '#fff' : 'transparent';
+    d.textContent = p.name[0].toUpperCase();
+    dots.appendChild(d);
+  });
+
+  // Recap
+  buildRecap();
+
+  // Vote grid — 2 cols normally, 3 cols for 6+ players
+  const opts = document.getElementById('voteOptions');
+  opts.innerHTML = '';
+  const votable = active.filter(p => p.id !== voter.id);
+  opts.style.gridTemplateColumns = votable.length >= 5 ? 'repeat(3,1fr)' : 'repeat(2,1fr)';
+
+  votable.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'vote-option';
+    card.style.borderColor = p.color + '66';
+    card.innerHTML = `
+      <div class="vo-avatar" style="background:${p.color}">${p.name[0].toUpperCase()}</div>
+      <div class="vo-name" style="color:${p.color}">${p.name}</div>
+      <div class="vo-btn" style="background:${p.color}">VOTE →</div>
+    `;
+    card.onclick = () => castVote(p.id);
+    opts.appendChild(card);
+  });
+
+  // Individual skip — styled as a card like the others
+  const skipCard = document.createElement('div');
+  skipCard.className = 'vote-option';
+  skipCard.style.cssText = `border-color:#ffffff33;`;
+  skipCard.innerHTML = `
+    <div class="vo-avatar" style="background:var(--surface2);color:var(--text);font-size:1.4rem;font-weight:900">⏭</div>
+    <div class="vo-name" style="color:var(--text)">Skip</div>
+    <div class="vo-btn" style="background:#ffffff18;color:var(--text);border:1px solid #ffffff33">SKIP →</div>
+  `;
+  skipCard.onclick = () => castVote('skip');
+  opts.appendChild(skipCard);
+
+  showScreen('voting');
+  document.getElementById('voting').scrollTop = 0;
+}
+
+function castVote(pid) {
+  saveUndo('vote');
+  const key = pid === 'skip' ? 'skip' : parseInt(pid);
+  G.votes[key] = (G.votes[key] || 0) + 1;
+  const active = G.players.filter(p => !G.eliminated.includes(p.id));
+  const votesPerVoter = G.numImposters || 1;
+  const voterPlayerIdx = Math.floor(G.voterIndex / votesPerVoter);
+  const voteGroupStart = voterPlayerIdx * votesPerVoter;
+  const voter = active[voterPlayerIdx];
+  if (!G.voteLog) G.voteLog = [];
+  G.voteLog.push({ voterId: voter.id, voterName: voter.name, voterColor: voter.color, targetId: key, voteRound: voteGroupStart });
+  G.voterIndex++;
+  showVoting();
+}
+
+function buildRecap() {
+  const body = document.getElementById('recapBody');
+  body.innerHTML = '';
+  body.style.cssText = 'display:flex;flex-direction:column;gap:4px';
+
+  const rounds = {};
+  G.allClues.forEach(c => { if (!rounds[c.round]) rounds[c.round] = []; rounds[c.round].push(c); });
+
+  // Oldest round first
+  Object.keys(rounds).sort((a,b) => a-b).forEach(r => {
+    const lbl = document.createElement('div');
+    lbl.style.cssText = 'font-size:0.65rem;color:var(--accent);letter-spacing:2px;padding:6px 2px 2px;text-align:center';
+    lbl.textContent = `— ROUND ${r} —`;
+    body.appendChild(lbl);
+
+    let recapNum = 0;
+    rounds[r].forEach(c => {
+      recapNum++;
+      const p = G.players.find(x => x.id === c.playerId);
+      const row = document.createElement('div');
+      row.style.cssText = `display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-left:3px solid ${p.color};border-radius:8px;padding:7px 10px;gap:8px`;
+      row.innerHTML = `
+        <span style="font-size:0.8rem;font-weight:700;color:${p.color};white-space:nowrap"><span style="opacity:0.5;font-size:0.7rem;margin-right:3px">${recapNum}.</span>${c.name}</span>
+        <span style="font-family:'Orbitron',monospace;font-size:0.82rem;color:var(--text)">${c.clue}</span>
+      `;
+      body.appendChild(row);
+    });
+  });
+}
+
+function toggleRecap() {}
+
+/* RESULTS — typewriter reveal */
+function typewriterReveal(lines, onDone) {
+  const container = document.getElementById('revealLines');
+  container.innerHTML = '';
+  document.getElementById('revealActions').style.display = 'none';
+
+  let lineIndex = 0;
+  function nextLine() {
+    if (lineIndex >= lines.length) { setTimeout(onDone, 400); return; }
+    const cfg = lines[lineIndex++];
+    const div = document.createElement('div');
+    div.className = `reveal-line size-${cfg.size||'md'}`;
+    if (cfg.color) div.style.color = cfg.color;
+    if (cfg.glow)  div.style.textShadow = `0 0 30px ${cfg.color}88`;
+    container.appendChild(div);
+
+    // Speak this line as it starts typing
+    announce(cfg.text);
+
+    setTimeout(() => {
+      const text = cfg.text; const speed = cfg.speed || 55; let i = 0;
+      const cursor = document.createElement('span');
+      cursor.className = 'reveal-cursor';
+      div.appendChild(cursor);
+      const interval = setInterval(() => {
+        cursor.insertAdjacentText('beforebegin', text[i]); i++;
+        if (i >= text.length) {
+          clearInterval(interval);
+          setTimeout(() => { cursor.remove(); setTimeout(nextLine, cfg.pauseAfter || 300); }, 200);
+        }
+      }, speed);
+    }, cfg.delay || 0);
+  }
+  nextLine();
+}
+
+function renderVoteBreakdown() {
+  const wrap = document.getElementById('voteBreakdown');
+  if (G.hideVotes || !G.voteLog?.length) return;
+  const list = document.getElementById('voteBreakdownList');
+  list.innerHTML = '';
+  G.voteLog.forEach(entry => {
+    const voter  = G.players.find(p => p.id === entry.voterId);
+    const target = entry.targetId === 'skip'
+      ? { name: 'Skip', color: 'var(--muted)' }
+      : G.players.find(p => p.id === entry.targetId);
+    if (!voter || !target) return;
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;background:var(--surface);border-radius:10px;padding:9px 12px;';
+    row.innerHTML = `
+      <div style="width:26px;height:26px;border-radius:50%;background:${voter.color};display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;color:#000;flex-shrink:0">${voter.name[0]}</div>
+      <span style="font-weight:700;color:${voter.color};font-size:0.9rem;flex:1">${voter.name}</span>
+      <span style="color:var(--muted);font-size:0.8rem">voted</span>
+      <div style="width:26px;height:26px;border-radius:50%;background:${target.color};display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;color:#000;flex-shrink:0">${target.name[0]}</div>
+      <span style="font-weight:700;color:${target.color};font-size:0.9rem">${target.name}</span>
+    `;
+    list.appendChild(row);
+  });
+  wrap.style.display = 'block';
+}
+
+function showResults() {
+  if (!showResults._fromUndo) saveUndo('vote result');
+  showResults._fromUndo = false;
+  showScreen('results');
+  document.getElementById('voteBreakdown').style.display = 'none';
+  renderVoteBreakdown();
+  const active = G.players.filter(p => !G.eliminated.includes(p.id));
+  const skipCount   = G.votes['skip'] || 0;
+  const majoritySkipped = skipCount >= Math.ceil(active.length / 2);
+
+  let topPid = null, topVotes = 0;
+  active.forEach(p => { const v = G.votes[p.id]||0; if (v > topVotes) { topVotes = v; topPid = p.id; } });
+
+  // Check for tie — if multiple players share the top vote count, nobody is eliminated
+  const topCount = active.filter(p => (G.votes[p.id]||0) === topVotes && topVotes > 0).length;
+  const isTie = topCount > 1;
+
+  const nextBtn = document.getElementById('nextRoundBtn');
+  const endBtn  = document.getElementById('endGameBtn');
+  nextBtn.style.display = 'none';
+  endBtn.style.display  = 'none';
+
+  if (majoritySkipped || topVotes === 0 || isTie) {
+    G.roundsSurvived++;
+    const msg = isTie ? "It's a tie — nobody eliminated." : 'Nobody was eliminated.';
+    typewriterReveal([
+      { text: msg, size:'lg', color:'var(--muted)', speed:50, pauseAfter:400 },
+      { text: 'The imposter lives on...', size:'xl', color:'var(--danger)', glow:true, speed:60, pauseAfter:200 },
+    ], () => {
+      setTimeout(() => {
+        nextBtn.textContent = 'NEXT ROUND ▶';
+        nextBtn.style.display = 'block';
+        document.getElementById('revealActions').style.display = 'flex'; document.getElementById('voteBreakdown').style.display = 'block';
+      }, 800);
+    });
+
+  } else {
+    const topPlayer  = G.players.find(p => p.id === topPid);
+    const isImposter = G.imposterIds.includes(topPid);
+
+    if (isImposter) {
+      G.eliminated.push(topPid);
+      const remaining = G.imposterIds.filter(id => !G.eliminated.includes(id));
+      const allCaught = remaining.length === 0;
+      const revealLines = [
+        { text: topPlayer.name + ' has been voted out.', size:'lg', color:topPlayer.color, glow:true, speed:55, pauseAfter:500 },
+        { text: 'They were...', size:'md', color:'var(--muted)', speed:60, pauseAfter:700 },
+        { text: 'IMPOSTER', size:'xl', color:'var(--danger)', glow:true, speed:70, pauseAfter:400 },
+      ];
+      if (allCaught) {
+        revealLines.push({ text: 'The word was: ' + G.secretWord, size:'md', color:'var(--accent2)', speed:50, pauseAfter:200 });
+      } else {
+        revealLines.push({ text: remaining.length + ' imposter' + (remaining.length > 1 ? 's' : '') + ' still hiding...', size:'md', color:'var(--danger)', speed:50, pauseAfter:200 });
+      }
+      typewriterReveal(revealLines, () => {
+        setTimeout(() => {
+          if (allCaught) { endBtn.style.display = 'block'; }
+          else { nextBtn.textContent = 'CONTINUE HUNT ▶'; nextBtn.style.display = 'block'; }
+          document.getElementById('revealActions').style.display = 'flex';
+          document.getElementById('voteBreakdown').style.display = 'block';
+        }, 800);
+      });
+    } else {
+      G.eliminated.push(topPid);
+      G.roundsSurvived++;
+
+      if (G.suddenDeath) {
+        const realImposters = G.imposterIds.map(id => G.players.find(p => p.id === id));
+        const imposterNames = realImposters.map(p => p.name).join(' & ');
+        const imposterColor = realImposters[0]?.color || 'var(--danger)';
+        typewriterReveal([
+          { text: `${topPlayer.name} has been voted out.`, size:'lg', color:topPlayer.color, glow:true, speed:55, pauseAfter:500 },
+          { text: 'They were...', size:'md', color:'var(--muted)', speed:60, pauseAfter:700 },
+          { text: 'INNOCENT', size:'xl', color:'var(--success)', glow:true, speed:70, pauseAfter:500 },
+          { text: `The real imposter was...`, size:'md', color:'var(--muted)', speed:60, pauseAfter:700 },
+          { text: imposterNames, size:'xl', color:imposterColor, glow:true, speed:70, pauseAfter:400 },
+          { text: `The word was: ${G.secretWord}`, size:'md', color:'var(--accent2)', speed:50, pauseAfter:200 },
+        ], () => {
+          setTimeout(() => {
+            endBtn.style.display = 'block';
+            document.getElementById('revealActions').style.display = 'flex'; document.getElementById('voteBreakdown').style.display = 'block';
+          }, 800);
+        });
+      } else {
+        typewriterReveal([
+          { text: `${topPlayer.name} has been voted out.`, size:'lg', color:topPlayer.color, glow:true, speed:55, pauseAfter:500 },
+          { text: 'They were...', size:'md', color:'var(--muted)', speed:60, pauseAfter:700 },
+          { text: 'INNOCENT', size:'xl', color:'var(--success)', glow:true, speed:70, pauseAfter:300 },
+        ], () => {
+          setTimeout(() => {
+            const rem = active.filter(p => !G.eliminated.includes(p.id));
+            if (rem.length <= 2) { endBtn.style.display = 'block'; }
+            else { nextBtn.textContent = 'NEXT ROUND ▶'; nextBtn.style.display = 'block'; }
+            document.getElementById('revealActions').style.display = 'flex'; document.getElementById('voteBreakdown').style.display = 'block';
+          }, 800);
+        });
+      }
+    }
+  }
+}
+
+function nextRound() {
+  saveUndo('next round');
+  G.round++; G.roundClues = []; cluePlayerIdx = 0;
+
+  // Rotate order: person after the last eliminated player goes first
+  const active = G.players.filter(p => !G.eliminated.includes(p.id));
+  const lastEliminated = G.eliminated[G.eliminated.length - 1];
+  if (lastEliminated !== undefined) {
+    // Find where the eliminated player was in the full list
+    const elimIdx = G.players.findIndex(p => p.id === lastEliminated);
+    // Find the next active player after them (clockwise)
+    let nextIdx = (elimIdx + 1) % G.players.length;
+    while (G.eliminated.includes(G.players[nextIdx].id)) {
+      nextIdx = (nextIdx + 1) % G.players.length;
+    }
+    // Rotate G.players so that person is first
+    const pivot = G.players.findIndex(p => p.id === G.players[nextIdx].id);
+    G.players = [...G.players.slice(pivot), ...G.players.slice(0, pivot)];
+  }
+
+  startClueRound();
+}
+
+/* FINAL */
+function showFinal() {
+  const caughtAll     = G.imposterIds.every(id => G.eliminated.includes(id));
+  const imposterNames = G.imposterIds.map(id => G.players.find(p=>p.id===id)?.name).join(', ');
+  document.getElementById('finalTrophy').textContent   = caughtAll ? '🎉' : '🎭';
+  document.getElementById('finalTitle').textContent    = caughtAll ? 'IMPOSTERS CAUGHT!' : 'IMPOSTERS WIN!';
+  document.getElementById('survivalCount').textContent = G.roundsSurvived;
+  document.getElementById('survivalLabel').textContent = caughtAll
+    ? `round${G.roundsSurvived!==1?'s':''} survived before being caught`
+    : `rounds survived — imposters win!`;
+  document.getElementById('finalStats').innerHTML = `
+    <div class="stat-row"><span style="color:var(--muted)">Imposter(s)</span><span style="color:var(--danger)">${imposterNames}</span></div>
+    <div class="stat-row"><span style="color:var(--muted)">🔓 Secret Word</span><span style="color:var(--accent2)">${G.secretWord}</span></div>
+    <div class="stat-row"><span style="color:var(--muted)">Category</span><span>${G.categoryHint || '—'}</span></div>
+    <div class="stat-row"><span style="color:var(--muted)">Rounds Survived</span><span style="color:var(--gold)">${G.roundsSurvived}</span></div>
+    <div class="stat-row"><span style="color:var(--muted)">Players Bluffed</span><span style="color:var(--gold)">${G.players.length} players</span></div>
+    <div class="stat-row"><span style="color:var(--muted)">Imposter Score</span><span style="color:var(--gold);font-family:'Orbitron',monospace;font-size:1.1rem">${G.roundsSurvived * G.players.length} pts</span></div>
+    <div class="stat-row"><span style="color:var(--muted)">Rating</span><span style="color:var(--gold)">${getRating()}</span></div>`;
+  showScreen('final');
+}
+
+function getRating() {
+  if (G.roundsSurvived >= 5) return '⭐⭐⭐⭐⭐ LEGENDARY';
+  if (G.roundsSurvived >= 3) return '⭐⭐⭐⭐ Masterful';
+  if (G.roundsSurvived >= 2) return '⭐⭐⭐ Skillful';
+  if (G.roundsSurvived >= 1) return '⭐⭐ Decent';
+  return '⭐ Busted Fast';
+}
+
+function resetGame() {
+  const prevPlayers   = G.players ? [...G.players] : [];
+  const prevImposters = G.imposterIds || [];
+
+  showScreen('setup');
+
+  if (prevPlayers.length > 0) {
+    const lastImposterId = prevImposters[prevImposters.length - 1];
+    const pivot = lastImposterId !== undefined
+      ? prevPlayers.findIndex(p => p.id === lastImposterId) : -1;
+    const rotated = pivot >= 0
+      ? [...prevPlayers.slice(pivot), ...prevPlayers.slice(0, pivot)]
+      : prevPlayers;
+
+    _selectedNames = rotated.map(p => ({ name: p.name, color: p.color, origId: p.id }));
+    numPlayers = _selectedNames.length;
+  } else {
+    _selectedNames = [];
+    numPlayers = 0;
+  }
+  renderNamePicker();
+}
+
+function howToPlay() { showScreen('howtoplay'); }
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id !== 'results' && id !== 'mp-results') stopAnnouncer();
+}
+
+/* ══════════════════════════════════════════
+   ANNOUNCER — Web Speech API
+══════════════════════════════════════════ */
+let _voices = [];
+
+function loadVoices() {
+  _voices = window.speechSynthesis.getVoices();
+  const sel = document.getElementById('voiceSelect');
+  if (!sel || _voices.length === 0) return;
+
+  // Known robotic / novelty names to exclude
+  const exclude = ['zarvox','trinoids','whisper','bells','boing','bubbles','cellos','deranged','good news','bad news','hysterical','pipe organ','wobble','bahh','ralph','fred','albert','junior','kathy','vicki','victoria','bruce','agnes','princess','tinker bell','organ','superstar','cello'];
+
+  const filtered = _voices.filter(v => {
+    const lang  = v.lang.toLowerCase();
+    const name  = v.name.toLowerCase();
+    if (!lang.startsWith('en')) return false;
+    if (exclude.some(e => name.includes(e))) return false;
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    // Fallback: just show all English
+    filtered.push(..._voices.filter(v => v.lang.toLowerCase().startsWith('en')));
+  }
+
+  sel.innerHTML = '';
+  filtered.forEach((v, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.dataset.name = v.name;
+    opt.textContent = `${v.name} (${v.lang})`;
+    if (v.name.toLowerCase().includes('daniel') ||
+        v.name.toLowerCase().includes('samantha') ||
+        v.name.toLowerCase().includes('karen')   ||
+        v.name.toLowerCase().includes('moira')) opt.selected = true;
+    sel.appendChild(opt);
+  });
+
+  // Store filtered list so getSelectedVoice works
+  _voices = filtered;
+}
+window.speechSynthesis.onvoiceschanged = loadVoices;
+loadVoices();
+
+function getSelectedVoice() {
+  const sel = document.getElementById('voiceSelect');
+  if (!sel) return null;
+  const opt = sel.options[sel.selectedIndex];
+  if (!opt?.dataset.name) return null;
+  return _voices.find(v => v.name === opt.dataset.name) || null;
+}
+
+function announce(text, onDone) {
+  if (!document.getElementById('toggleAnnouncer')?.checked) {
+    if (onDone) setTimeout(onDone, 0);
+    return;
+  }
+  window.speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  const voice = getSelectedVoice();
+  if (voice) utt.voice = voice;
+  utt.rate = 0.88; utt.pitch = 1.0; utt.volume = 1.0;
+  utt.onend   = () => { if (onDone) onDone(); };
+  utt.onerror = () => { if (onDone) onDone(); };
+  window.speechSynthesis.speak(utt);
+}
+
+function testVoice() {
+  const text = document.getElementById('voiceTestInput')?.value || 'Testing, testing.';
+  announce(text);
+}
+
+function stopAnnouncer() { window.speechSynthesis.cancel(); }
+
+/* ══ SOUND EFFECTS ══════════════════════════════ */
+function getAudioCtx() {
+  if (!window._audioCtx) window._audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return window._audioCtx;
+}
+function playTone(freq, startTime, duration, type, gainVal, ctx) {
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.type = type || 'sine';
+  osc.frequency.setValueAtTime(freq, startTime);
+  gain.gain.setValueAtTime(gainVal || 0.3, startTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+  osc.start(startTime); osc.stop(startTime + duration + 0.01);
+}
+function ordinalWord(n) {
+  if (n===1) return '1st'; if (n===2) return '2nd'; if (n===3) return '3rd'; return n+'th';
+}
+
+function undoLast() {
+  if (G.roundClues.length > 0) {
+    const last = G.roundClues.pop();
+    G.allClues.splice(G.allClues.lastIndexOf(G.allClues.find(c => c === last)), 1);
+    // Find and remove from allClues properly
+    for (let i = G.allClues.length - 1; i >= 0; i--) {
+      if (G.allClues[i].playerId === last.playerId && G.allClues[i].clue === last.clue && G.allClues[i].round === last.round) {
+        G.allClues.splice(i, 1);
+        break;
+      }
+    }
+    if (cluePlayerIdx > 0) cluePlayerIdx--;
+    renderClueRound();
+    document.getElementById('clueInput').focus();
+    return;
+  }
+  // Nothing to undo
+  const inp = document.getElementById('clueInput');
+  inp.placeholder = 'Nothing to undo!';
+  setTimeout(() => { inp.placeholder = `${G.players.filter(p=>!G.eliminated.includes(p.id))[cluePlayerIdx%G.players.filter(p=>!G.eliminated.includes(p.id)).length]?.name}'s clue...`; }, 1500);
+}
+function toggleReviewMode() {
+  G.reviewMode = !G.reviewMode;
+  renderRevealList();
+}
+
+function openMidGameReview() {
+  G._returnScreen = 'clueround';
+  const grid = document.getElementById('midReviewGrid');
+  grid.innerHTML = '';
+  const active = G.players.filter(p => !G.eliminated.includes(p.id));
+  active.forEach((p, idx) => {
+    const card = document.createElement('div');
+    card.style.cssText = `position:relative;background:var(--surface);border:2px solid ${p.color}cc;border-radius:16px;padding:18px 10px 14px;text-align:center;cursor:pointer;`;
+    card.innerHTML = `
+      <div style="position:absolute;top:7px;left:10px;font-family:'Orbitron',monospace;font-size:0.65rem;color:${p.color};font-weight:700">${idx+1}${ordinal(idx+1)}</div>
+      <div style="width:50px;height:50px;border-radius:50%;background:${p.color};display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:1.2rem;font-weight:700;color:#000;margin:0 auto 8px">${p.name[0].toUpperCase()}</div>
+      <div style="font-size:0.9rem;font-weight:700;color:var(--text)">${p.name}</div>
+    `;
+    card.onclick = () => {
+      soundAlertRandom();
+      G._midReviewPid = p.id;
+      // Temporarily remove from revealed so word card shows properly
+      const wasRevealed = G.revealedCards.includes(p.id);
+      if (!wasRevealed) G.revealedCards.push(p.id); // keep consistent
+      showWordCard(p.id);
+    };
+    grid.appendChild(card);
+  });
+  showScreen('midreview');
+}
+
+function wcGoBack() {
+  if (G._returnScreen === 'clueround') {
+    openMidGameReview();
+  } else {
+    showRevealPhase();
+  }
+}
+function closeMidGameReview() {
+  showScreen(G._returnScreen || 'clueround');
+}
+
+function soundAlertRandom() {
+  const ctx = getAudioCtx(), now = ctx.currentTime;
+  const patterns = [
+    // Pattern 1 — two quick high beeps
+    () => { [1047,1047].forEach((f,i) => { const o=ctx.createOscillator(),g=ctx.createGain(); o.connect(g);g.connect(ctx.destination); o.type='square';o.frequency.value=f; const t=now+i*0.2; g.gain.setValueAtTime(0.3,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.15); o.start(t);o.stop(t+0.16); }); },
+    // Pattern 2 — ascending three beeps
+    () => { [523,659,784].forEach((f,i) => { const o=ctx.createOscillator(),g=ctx.createGain(); o.connect(g);g.connect(ctx.destination); o.type='triangle';o.frequency.value=f; const t=now+i*0.15; g.gain.setValueAtTime(0.28,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.12); o.start(t);o.stop(t+0.13); }); },
+    // Pattern 3 — low warning pulse
+    () => { [220,220,220].forEach((f,i) => { const o=ctx.createOscillator(),g=ctx.createGain(); o.connect(g);g.connect(ctx.destination); o.type='sawtooth';o.frequency.value=f; const t=now+i*0.22; g.gain.setValueAtTime(0.25,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.18); o.start(t);o.stop(t+0.19); }); },
+    // Pattern 4 — single long tone
+    () => { const o=ctx.createOscillator(),g=ctx.createGain(); o.connect(g);g.connect(ctx.destination); o.type='sine';o.frequency.value=880; g.gain.setValueAtTime(0.3,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.5); o.start(now);o.stop(now+0.51); },
+    // Pattern 5 — descending alert
+    () => { [880,660,440].forEach((f,i) => { const o=ctx.createOscillator(),g=ctx.createGain(); o.connect(g);g.connect(ctx.destination); o.type='square';o.frequency.value=f; const t=now+i*0.16; g.gain.setValueAtTime(0.25,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.13); o.start(t);o.stop(t+0.14); }); },
+  ];
+  patterns[Math.floor(Math.random() * patterns.length)]();
+}
+
+function soundAlert() {
+  // Sharp attention-grabbing beep — everyone hears it
+  const ctx = getAudioCtx(), now = ctx.currentTime;
+  [880, 880, 660].forEach((f, i) => {
+    const osc = ctx.createOscillator(), g = ctx.createGain();
+    osc.connect(g); g.connect(ctx.destination);
+    osc.type = 'square'; osc.frequency.value = f;
+    const t = now + i * 0.18;
+    g.gain.setValueAtTime(0.35, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+    osc.start(t); osc.stop(t + 0.16);
+  });
+}
+
+function soundCaught() {
+  const ctx = getAudioCtx(), now = ctx.currentTime;
+  // Simple happy ascending chime
+  [523, 659, 784, 1047].forEach((f, i) => {
+    playTone(f, now + i * 0.15, 0.35, 'sine', 0.3, ctx);
+  });
+}
+
+function soundInnocent() {
+  const ctx = getAudioCtx(), now = ctx.currentTime;
+  // Simple low descending tones — uh oh
+  [440, 370, 311].forEach((f, i) => {
+    playTone(f, now + i * 0.2, 0.35, 'sine', 0.3, ctx);
+  });
+}
+function soundSkip() {
+  // Suspense sting — mystery continues
+  const ctx = getAudioCtx(), now = ctx.currentTime;
+  playTone(330, now,     0.3, 'sine', 0.2, ctx);
+  playTone(311, now+0.3, 0.4, 'sine', 0.15, ctx);
+  playTone(277, now+0.6, 0.6, 'sine', 0.1, ctx);
+}
+
+/* ══ FLASH OVERLAY ═══════════════════════════════ */
+function flashScreen(color, emoji, label) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:${color};`;
+  overlay.innerHTML = `
+    <div style="font-size:7rem">${emoji}</div>
+    <div style="font-family:'Orbitron',monospace;font-size:2.2rem;font-weight:900;color:#fff;margin-top:14px;letter-spacing:3px;text-align:center;padding:0 20px">${label}</div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.animate([{opacity:0,transform:'scale(1.1)'},{opacity:1,transform:'scale(1)'}],{duration:200,fill:'forwards'});
+  setTimeout(() => {
+    overlay.animate([{opacity:1},{opacity:0}],{duration:600,fill:'forwards'});
+    setTimeout(() => overlay.remove(), 620);
+  }, 2000);
+}
+
+function addCrewName() {
+  const inp  = document.getElementById('nameSearchInput');
+  const name = inp?.value.trim();
+  if (!name || CREW.includes(name)) { if (inp) inp.value = ''; filterNamePicker(); return; }
+  CREW.push(name);
+  saveCrewToStorage();
+  if (inp) inp.value = '';
+  renderAlphaBar();
+  filterNamePicker();
+}
+
+function removeCrewName(name) {
+  const idx = CREW.indexOf(name);
+  if (idx !== -1) CREW.splice(idx, 1);
+  saveCrewToStorage();
+  renderCrewList();
+}
+
+function renderCrewList() {
+  const list = document.getElementById('crewList');
+  if (!list) return;
+  list.innerHTML = '';
+  [...CREW].sort((a,b) => a.localeCompare(b)).forEach(name => {
+    const tag = document.createElement('div');
+    tag.style.cssText = 'display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 10px 4px 12px;font-size:0.85rem;font-weight:600';
+    const safeName = name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    tag.innerHTML = '<span>' + name + '</span><button onclick="removeCrewName(\'' + safeName + '\');event.stopPropagation()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.85rem;padding:0 2px;line-height:1">✕</button>';
+    list.appendChild(tag);
+  });
+}
+
+function saveCrewToStorage() {
+  try { localStorage.setItem('imposter_crew', JSON.stringify(CREW)); } catch(e) {}
+}
+
+function loadCrewFromStorage() {
+  try {
+    const saved = localStorage.getItem('imposter_crew');
+    if (saved) {
+      const arr = JSON.parse(saved);
+      CREW.length = 0;
+      arr.forEach(n => CREW.push(n));
+    }
+  } catch(e) {}
+}
+
+loadCrewFromStorage();
+renderNamePicker();
+renderCrewList();
+</script>
+
+<!-- ══════════ MULTIPLAYER SCREENS ══════════ -->
+
+<!-- MP Splash -->
+<div class="screen" id="mp-splash">
+  <div class="screen-title" style="margin-bottom:8px">🌐 PLAY ONLINE</div>
+  <p class="subtitle">Everyone plays from their own phone.<br>One person creates, others join.</p>
+  <div class="setup-card" style="max-width:400px;width:100%;margin-bottom:20px">
+    <input type="text" id="mpName" placeholder="Your name" style="width:100%;margin-bottom:12px" />
+    <button class="btn btn-primary" onclick="mpCreate()" style="margin-bottom:10px">CREATE ROOM</button>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input type="text" id="mpCode" placeholder="Room code" style="flex:1;text-transform:uppercase;letter-spacing:3px;font-family:Orbitron,monospace;font-size:1rem" maxlength="4" />
+      <button class="btn-sm" onclick="mpJoin()" style="height:44px;border-radius:10px">JOIN</button>
+    </div>
+  </div>
+  <div class="mp-status" id="mpSplashStatus"></div>
+  <button class="btn btn-secondary" onclick="showScreen('splash')" style="margin-top:12px">BACK</button>
+</div>
+
+<!-- MP Lobby (host) -->
+<div class="screen" id="mp-lobby">
+  <div class="round-badge" style="margin-bottom:12px;align-self:center">LOBBY</div>
+  <div class="screen-title" style="margin-bottom:4px">Room Code</div>
+  <div style="font-family:'Orbitron',monospace;font-size:3rem;font-weight:900;color:var(--accent2);letter-spacing:8px;margin-bottom:4px" id="mpRoomCode">----</div>
+  <p style="color:var(--muted);font-size:0.82rem;margin-bottom:20px">Share this code with friends</p>
+
+  <div class="setup-card" style="max-width:400px;width:100%;margin-bottom:16px">
+    <div style="font-size:0.78rem;color:var(--muted);letter-spacing:1px;margin-bottom:10px">PLAYERS JOINED</div>
+    <div id="mpPlayerList" style="display:flex;flex-direction:column;gap:8px"></div>
+  </div>
+
+  <div class="setup-card" style="max-width:400px;width:100%;margin-bottom:16px">
+    <div class="setup-row">
+      <span class="setup-label">Imposters</span>
+      <div class="counter">
+        <button class="counter-btn" onclick="mpAdj(-1)">−</button>
+        <span class="counter-val" id="mpImposterCount">1</span>
+        <button class="counter-btn" onclick="mpAdj(1)">+</button>
+      </div>
+    </div>
+    <div class="setup-row">
+      <div><div class="setup-label">Imposters know each other</div></div>
+      <label class="toggle-switch"><input type="checkbox" id="mpToggleKnow" checked><span class="toggle-slider"></span></label>
+    </div>
+    <div class="setup-row">
+      <div><div class="setup-label">Show category</div></div>
+      <label class="toggle-switch"><input type="checkbox" id="mpToggleCat" checked><span class="toggle-slider"></span></label>
+    </div>
+    <div class="setup-row" style="margin-bottom:0">
+      <div><div class="setup-label">Imposter only</div></div>
+      <label class="toggle-switch"><input type="checkbox" id="mpToggleImpOnly"><span class="toggle-slider"></span></label>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" id="mpStartBtn" onclick="mpStartGame()" style="max-width:400px;width:100%">START GAME</button>
+  <button class="btn btn-secondary" onclick="mpLeave()" style="margin-top:10px;max-width:400px;width:100%">LEAVE</button>
+</div>
+
+<!-- MP Waiting (non-host) -->
+<div class="screen" id="mp-waiting">
+  <div class="screen-title" style="margin-bottom:8px">WAITING FOR HOST</div>
+  <div style="font-family:'Orbitron',monospace;font-size:2.5rem;font-weight:900;color:var(--accent2);letter-spacing:6px;margin-bottom:16px" id="mpWaitCode">----</div>
+  <div class="setup-card" style="max-width:400px;width:100%;margin-bottom:16px">
+    <div style="font-size:0.78rem;color:var(--muted);letter-spacing:1px;margin-bottom:10px">PLAYERS IN ROOM</div>
+    <div id="mpWaitList" style="display:flex;flex-direction:column;gap:8px"></div>
+  </div>
+  <div class="mp-status" id="mpWaitStatus" style="color:var(--muted);font-size:0.85rem;text-align:center">Host will start the game...</div>
+  <button class="btn btn-secondary" onclick="mpLeave()" style="margin-top:16px;max-width:400px;width:100%">LEAVE</button>
+</div>
+
+<!-- MP Word Reveal (each player sees their own word) -->
+<div class="screen" id="mp-reveal">
+  <div class="wc-banner" id="mpWcBanner">
+    <div class="wc-label">Your word</div>
+    <div class="wc-name" id="mpWcName">—</div>
+  </div>
+  <div class="card-wrap card-hidden" id="mpWcCard" onclick="mpRevealCard()">
+    <p style="color:var(--muted);font-size:0.9rem;letter-spacing:1px">TAP TO REVEAL</p>
+  </div>
+  <p class="tap-hint" id="mpTapHint">👆 Tap the card</p>
+  <button class="btn btn-primary" id="mpGotItBtn" onclick="mpGotIt()" style="display:none;max-width:340px;width:100%;margin-top:18px">GOT IT!</button>
+</div>
+
+<!-- MP Clue Round -->
+<div class="screen" id="mp-clue">
+  <div class="clue-header">
+    <div class="clue-top-row">
+      <span class="round-badge" id="mpRoundBadge">ROUND 1</span>
+      <span id="mpTimerDisplay" style="font-family:'Orbitron',monospace;font-size:1rem;color:var(--gold)"></span>
+    </div>
+    <div id="mpCategoryBanner" style="display:none;text-align:center;padding:4px 0 6px;font-size:0.82rem;color:var(--muted)">
+      Category: <span id="mpCategoryText" style="color:var(--accent2);font-weight:700"></span>
+    </div>
+    <div class="clue-history-toggle" onclick="mpToggleHistory()">
+      <span id="mpHistoryLabel">📋 Clue history</span>
+      <span class="recap-toggle" id="mpHistoryArrow">▼</span>
+    </div>
+    <div class="clue-history-body" id="mpClueHistory"></div>
+  </div>
+  <div class="clue-footer">
+    <div class="current-player-bar" id="mpCurrentBar">
+      <div class="cp-dot" id="mpCpDot"></div>
+      <span id="mpCpName" style="font-weight:700;font-size:1.05rem"></span>
+      <span id="mpCpTurn" style="font-size:0.8rem;color:rgba(255,255,255,0.4);margin-left:8px"></span>
+    </div>
+    <div class="clue-input-row" id="mpClueInputRow">
+      <input type="text" id="mpClueInput" placeholder="Your clue..." autocomplete="off" onkeydown="if(event.key==='Enter')mpSubmitClue()" />
+      <button class="btn-sm" onclick="mpSubmitClue()">SEND</button>
+    </div>
+    <div id="mpClueWait" style="display:none;text-align:center;padding:10px;color:var(--muted);font-size:0.85rem">Waiting for your turn...</div>
+    <button class="btn btn-danger" id="mpVoteBtn" onclick="mpCallVote()" style="width:100%;margin-top:6px;display:none">🗳 CALL VOTE</button>
+  </div>
+</div>
+
+<!-- MP Voting -->
+<div class="screen" id="mp-vote">
+  <div class="voter-hero" id="mpVoterHero" style="background:var(--surface2)">
+    <div class="vh-label">VOTE</div>
+    <div class="vh-name" id="mpVoterName" style="color:var(--text);font-size:1.4rem">WHO IS THE IMPOSTER?</div>
+    <div class="vh-sub" id="mpVoteStatus"></div>
+  </div>
+  <div class="voting-body">
+    <div class="recap-block" style="margin-bottom:12px">
+      <div class="recap-header" id="mpRecapHeader" onclick="mpToggleRecap()">
+        <span>📋 CLUE RECAP</span><span class="recap-toggle">▼</span>
+      </div>
+      <div class="recap-body" id="mpRecapBody"></div>
+    </div>
+    <div class="vote-label">TAP TO VOTE</div>
+    <div class="vote-options" id="mpVoteOptions"></div>
+    <div id="mpVoteWait" style="text-align:center;color:var(--muted);font-size:0.85rem;padding:12px;display:none">Waiting for others to vote...</div>
+  </div>
+</div>
+
+<!-- MP Results -->
+<div class="screen" id="mp-results">
+  <div class="reveal-stage">
+    <div class="reveal-lines" id="mpRevealLines"></div>
+    <div class="reveal-actions" id="mpRevealActions" style="display:none">
+      <button class="btn btn-primary" id="mpNextBtn" onclick="mpNextRound()" style="max-width:360px;width:100%">NEXT ROUND ▶</button>
+      <button class="btn btn-danger" id="mpEndBtn" onclick="mpEndGame()" style="max-width:360px;width:100%;display:none;margin-top:12px">SEE FINAL RESULTS</button>
+    </div>
+  </div>
+</div>
+
+<!-- MP Final -->
+<div class="screen" id="mp-final">
+  <div class="trophy" id="mpTrophy">🕵️</div>
+  <div class="screen-title" id="mpFinalTitle">GAME OVER</div>
+  <div class="survival-count" id="mpSurvivalCount">0</div>
+  <p class="survival-label" id="mpSurvivalLabel">rounds survived</p>
+  <div class="result-card" style="max-width:400px;width:100%"><div id="mpFinalStats"></div></div>
+  <button class="btn btn-primary" onclick="mpLeave()" style="max-width:400px;width:100%;margin-top:12px">BACK TO HOME</button>
+</div>
+
+<style>
+.mp-status { font-size:0.85rem; color:var(--danger); text-align:center; min-height:20px; }
+.mp-player-row { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); }
+.mp-player-row:last-child { border-bottom:none; }
+.mp-player-dot { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Orbitron',monospace; font-size:0.7rem; font-weight:700; color:#000; flex-shrink:0; }
+.mp-host-badge { font-size:0.65rem; background:var(--accent); color:#fff; padding:2px 7px; border-radius:10px; margin-left:auto; }
+</style>
+
+<script>
+/* ══════════════════════════════════════════
+   MULTIPLAYER — Supabase Realtime
+   Uses free Supabase broadcast channels.
+   No database writes — pure ephemeral messaging.
+   
+   TO USE: Create a free account at supabase.com,
+   start a project, and paste your anon key + URL below.
+══════════════════════════════════════════ */
+
+const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_KEY = 'YOUR_ANON_KEY';
+
+let MP = {
+  channel: null, myName: '', myId: '', roomCode: '', isHost: false,
+  players: [], numImposters: 1, settings: {},
+  myWord: '', myIsImposter: false, myCoImposters: [],
+  allClues: [], votes: {}, round: 1, roundsSurvived: 0,
+  imposterIds: [], eliminated: [], historyOpen: false, recapOpen: false,
+  timerInterval: null
+};
+
+function mpGenId() { return Math.random().toString(36).slice(2,9); }
+function mpGenCode() { return Math.random().toString(36).slice(2,6).toUpperCase(); }
+
+function mpStatus(id, msg, isError) {
+  const el = document.getElementById(id);
+  if (el) { el.textContent = msg; el.style.color = isError ? 'var(--danger)' : 'var(--success)'; }
+}
+
+/* ── Connect to Supabase channel ── */
+async function mpConnect(code) {
+  // Dynamically load Supabase client
+  if (!window.supabase) {
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/supabase-js/2.39.3/umd/supabase.min.js';
+      s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+    window._sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  }
+
+  if (MP.channel) { MP.channel.unsubscribe(); MP.channel = null; }
+
+  MP.channel = window._sb.channel(`imposter:${code}`, {
+    config: { broadcast: { self: false } }
+  });
+
+  MP.channel.on('broadcast', { event: '*' }, ({ event, payload }) => {
+    mpHandleMessage(event, payload);
+  });
+
+  await new Promise((res) => {
+    MP.channel.subscribe((status) => { if (status === 'SUBSCRIBED') res(); });
+  });
+}
+
+/* ── Send a message ── */
+function mpSend(event, payload) {
+  if (!MP.channel) return;
+  MP.channel.send({ type: 'broadcast', event, payload });
+}
+
+/* ── Handle incoming messages ── */
+function mpHandleMessage(event, payload) {
+  switch (event) {
+    case 'player_join':
+      if (MP.isHost) {
+        // Add player if not already there
+        if (!MP.players.find(p => p.id === payload.id)) {
+          MP.players.push(payload);
+          mpRenderLobby();
+          // Send current player list back to everyone
+          mpSend('lobby_state', { players: MP.players, numImposters: MP.numImposters });
+        }
+      }
+      break;
+    case 'lobby_state':
+      MP.players = payload.players;
+      MP.numImposters = payload.numImposters || 1;
+      mpRenderWaiting();
+      break;
+    case 'game_start':
+      mpReceiveStart(payload);
+      break;
+    case 'clue_submitted':
+      mpReceiveClue(payload);
+      break;
+    case 'vote_called':
+      mpShowVoteScreen(payload);
+      break;
+    case 'vote_cast':
+      mpReceiveVote(payload);
+      break;
+    case 'next_round':
+      mpReceiveNextRound(payload);
+      break;
+  }
+}
+
+/* ── CREATE ROOM ── */
+async function mpCreate() {
+  const name = document.getElementById('mpName').value.trim();
+  if (!name) { mpStatus('mpSplashStatus', 'Enter your name first', true); return; }
+  if (SUPABASE_URL.includes('YOUR_PROJECT')) {
+    mpStatus('mpSplashStatus', 'Add your Supabase URL & key to enable online play', true);
+    return;
+  }
+  mpStatus('mpSplashStatus', 'Creating room...', false);
+  MP.myName = name; MP.myId = mpGenId(); MP.roomCode = mpGenCode();
+  MP.isHost = true; MP.players = [{ id: MP.myId, name, color: COLORS[0] }];
+  MP.numImposters = 1;
+  await mpConnect(MP.roomCode);
+  document.getElementById('mpRoomCode').textContent = MP.roomCode;
+  mpRenderLobby();
+  showScreen('mp-lobby');
+}
+
+/* ── JOIN ROOM ── */
+async function mpJoin() {
+  const name = document.getElementById('mpName').value.trim();
+  const code = document.getElementById('mpCode').value.trim().toUpperCase();
+  if (!name) { mpStatus('mpSplashStatus', 'Enter your name first', true); return; }
+  if (code.length !== 4) { mpStatus('mpSplashStatus', 'Enter a 4-letter room code', true); return; }
+  if (SUPABASE_URL.includes('YOUR_PROJECT')) {
+    mpStatus('mpSplashStatus', 'Add your Supabase URL & key to enable online play', true);
+    return;
+  }
+  mpStatus('mpSplashStatus', 'Joining...', false);
+  MP.myName = name; MP.myId = mpGenId(); MP.roomCode = code; MP.isHost = false;
+  await mpConnect(code);
+  const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+  MP.players = [{ id: MP.myId, name, color }];
+  mpSend('player_join', { id: MP.myId, name, color });
+  document.getElementById('mpWaitCode').textContent = code;
+  mpRenderWaiting();
+  showScreen('mp-waiting');
+}
+
+/* ── LOBBY ── */
+function mpAdj(d) {
+  const max = Math.floor(MP.players.length / 2);
+  MP.numImposters = Math.max(1, Math.min(max || 1, MP.numImposters + d));
+  document.getElementById('mpImposterCount').textContent = MP.numImposters;
+  mpSend('lobby_state', { players: MP.players, numImposters: MP.numImposters });
+}
+
+function mpRenderLobby() {
+  const list = document.getElementById('mpPlayerList');
+  list.innerHTML = '';
+  MP.players.forEach((p, i) => {
+    const row = document.createElement('div');
+    row.className = 'mp-player-row';
+    row.innerHTML = `<div class="mp-player-dot" style="background:${p.color}">${p.name[0].toUpperCase()}</div><span style="font-weight:600">${p.name}</span>${i===0?'<span class="mp-host-badge">HOST</span>':''}`;
+    list.appendChild(row);
+  });
+  document.getElementById('mpImposterCount').textContent = MP.numImposters;
+}
+
+function mpRenderWaiting() {
+  const list = document.getElementById('mpWaitList');
+  if (!list) return;
+  list.innerHTML = '';
+  MP.players.forEach((p, i) => {
+    const row = document.createElement('div');
+    row.className = 'mp-player-row';
+    row.innerHTML = `<div class="mp-player-dot" style="background:${p.color}">${p.name[0].toUpperCase()}</div><span style="font-weight:600">${p.name}</span>${i===0?'<span class="mp-host-badge">HOST</span>':''}`;
+    list.appendChild(row);
+  });
+}
+
+/* ── START GAME ── */
+function mpStartGame() {
+  if (MP.players.length < 2) { alert('Need at least 2 players'); return; }
+  const { word, hint } = pickWordWithHint();
+  const settings = {
+    categoryHint: document.getElementById('mpToggleCat').checked ? hint : null,
+    imposterOnly: document.getElementById('mpToggleImpOnly').checked,
+    knowEachOther: document.getElementById('mpToggleKnow').checked,
+  };
+
+  // Assign colors in order
+  const players = MP.players.map((p, i) => ({ ...p, color: COLORS[i % COLORS.length] }));
+
+  // Pick imposters
+  const shuffled = [...players].sort(() => Math.random() - 0.5);
+  const imposterIds = shuffled.slice(0, MP.numImposters).map(p => p.id);
+
+  // Send each player their individual info
+  players.forEach(p => {
+    const isImposter = imposterIds.includes(p.id);
+    const coImposters = isImposter && settings.knowEachOther
+      ? players.filter(x => imposterIds.includes(x.id) && x.id !== p.id).map(x => ({ name: x.name, color: x.color }))
+      : [];
+    mpSend('game_start', {
+      targetId: p.id,
+      players, imposterIds, settings,
+      word: isImposter ? null : word,
+      isImposter, coImposters, round: 1
+    });
+  });
+
+  // Host also receives their own
+  const meIsImposter = imposterIds.includes(MP.myId);
+  mpReceiveStart({
+    targetId: MP.myId, players, imposterIds, settings,
+    word: meIsImposter ? null : word,
+    isImposter: meIsImposter,
+    coImposters: meIsImposter && settings.knowEachOther
+      ? players.filter(x => imposterIds.includes(x.id) && x.id !== MP.myId).map(x => ({ name: x.name, color: x.color }))
+      : [],
+    round: 1
+  });
+}
+
+function mpReceiveStart(payload) {
+  if (payload.targetId !== MP.myId) return;
+  MP.players      = payload.players;
+  MP.imposterIds  = payload.imposterIds;
+  MP.settings     = payload.settings;
+  MP.myWord       = payload.word;
+  MP.myIsImposter = payload.isImposter;
+  MP.myCoImposters= payload.coImposters || [];
+  MP.allClues     = [];
+  MP.votes        = {};
+  MP.round        = payload.round || 1;
+  MP.eliminated   = payload.eliminated || [];
+  MP.roundsSurvived = payload.roundsSurvived || 0;
+  mpShowMyReveal();
+}
+
+/* ── MY REVEAL CARD ── */
+function mpShowMyReveal() {
+  const me = MP.players.find(p => p.id === MP.myId);
+  const banner = document.getElementById('mpWcBanner');
+  banner.style.background = me.color + '33';
+  banner.style.border = `2px solid ${me.color}66`;
+  document.getElementById('mpWcName').textContent = me.name;
+  document.getElementById('mpWcName').style.color = me.color;
+  const card = document.getElementById('mpWcCard');
+  card.className = 'card-wrap card-hidden';
+  card.innerHTML = '<p style="color:var(--muted);font-size:0.9rem;letter-spacing:1px">TAP TO REVEAL</p>';
+  card.onclick = mpRevealCard;
+  document.getElementById('mpTapHint').style.display = 'block';
+  document.getElementById('mpGotItBtn').style.display = 'none';
+  showScreen('mp-reveal');
+}
+
+let _mpCardShown = false;
+function mpRevealCard() {
+  if (_mpCardShown) return;
+  _mpCardShown = true;
+  const card = document.getElementById('mpWcCard');
+  card.onclick = null;
+  if (MP.myIsImposter) {
+    card.className = 'card-wrap card-imposter';
+    let coHTML = MP.myCoImposters.length
+      ? `<div style="margin-top:8px;font-size:0.8rem;color:rgba(255,255,255,0.7)">Partner: ${MP.myCoImposters.map(c=>`<span style="color:${c.color};font-weight:700">${c.name}</span>`).join(' & ')}</div>` : '';
+    let catHTML = MP.settings.categoryHint
+      ? `<div style="margin-top:6px;font-size:0.75rem;color:rgba(255,255,255,0.5)">Hint: <strong style="color:rgba(255,255,255,0.75)">${MP.settings.categoryHint}</strong></div>` : '';
+    card.innerHTML = `<div style="text-align:center;padding:16px"><div class="word-text imposter-color" style="margin-bottom:0">🎭 IMPOSTER</div>${coHTML}${catHTML}</div>`;
+  } else {
+    card.className = 'card-wrap card-word';
+    const catLine = (MP.settings.categoryHint && !MP.settings.imposterOnly)
+      ? `<div style="font-size:0.72rem;color:rgba(0,255,170,0.55);margin-top:6px;letter-spacing:1px">${MP.settings.categoryHint}</div>` : '';
+    card.innerHTML = `<div style="text-align:center;padding:16px"><div class="word-text word-color" style="margin-bottom:0">${MP.myWord}</div>${catLine}</div>`;
+  }
+  document.getElementById('mpTapHint').style.display = 'none';
+  document.getElementById('mpGotItBtn').style.display = 'block';
+}
+
+function mpGotIt() {
+  _mpCardShown = false;
+  mpShowClueRound();
+}
+
+/* ── CLUE ROUND ── */
+function mpShowClueRound() {
+  document.getElementById('mpRoundBadge').textContent = `ROUND ${MP.round}`;
+  const cat = MP.settings.categoryHint && !MP.settings.imposterOnly;
+  const cb = document.getElementById('mpCategoryBanner');
+  if (cat) { document.getElementById('mpCategoryText').textContent = MP.settings.categoryHint; cb.style.display='block'; }
+  else { cb.style.display='none'; }
+  document.getElementById('mpClueHistory').className = 'clue-history-body';
+  MP.historyOpen = false;
+  mpUpdateClueRound();
+  showScreen('mp-clue');
+}
+
+function mpUpdateClueRound() {
+  // Whose turn is it?
+  const active = MP.players.filter(p => !MP.eliminated.includes(p.id));
+  const turnIdx = MP.allClues.filter(c => c.round === MP.round).length % active.length;
+  const currentPlayer = active[turnIdx];
+  const isMyTurn = currentPlayer?.id === MP.myId;
+
+  const bar = document.getElementById('mpCurrentBar');
+  bar.style.background = currentPlayer ? currentPlayer.color + '22' : 'var(--surface)';
+  bar.style.borderLeft = currentPlayer ? `3px solid ${currentPlayer.color}` : '';
+  document.getElementById('mpCpDot').style.background = currentPlayer?.color || '';
+  document.getElementById('mpCpName').textContent = isMyTurn ? 'Your turn!' : (currentPlayer?.name || '');
+  document.getElementById('mpCpName').style.color = currentPlayer?.color || 'var(--text)';
+  document.getElementById('mpCpTurn').textContent = `${turnIdx+1} of ${active.length}`;
+
+  document.getElementById('mpClueInputRow').style.display = isMyTurn ? 'flex' : 'none';
+  document.getElementById('mpClueWait').style.display = isMyTurn ? 'none' : 'block';
+
+  // Host can call vote anytime
+  document.getElementById('mpVoteBtn').style.display = MP.isHost ? 'block' : 'none';
+
+  // Rebuild history
+  mpRenderClueHistory();
+
+  if (isMyTurn) {
+    setTimeout(() => document.getElementById('mpClueInput').focus(), 100);
+  }
+}
+
+function mpRenderClueHistory() {
+  const body = document.getElementById('mpClueHistory');
+  const wasOpen = body.classList.contains('open');
+  body.innerHTML = '';
+  const rounds = {};
+  MP.allClues.forEach(c => { if (!rounds[c.round]) rounds[c.round]=[]; rounds[c.round].push(c); });
+  const inner = document.createElement('div');
+  inner.className = 'clue-history-inner';
+  Object.keys(rounds).sort((a,b)=>a-b).forEach(r => {
+    const lbl = document.createElement('div'); lbl.className='ch-round-label'; lbl.textContent=`— ROUND ${r} —`; inner.appendChild(lbl);
+    rounds[r].forEach(c => {
+      const p = MP.players.find(x=>x.id===c.playerId);
+      const row = document.createElement('div'); row.className='ch-entry'; row.style.borderLeftColor=p?.color||'#fff';
+      row.innerHTML=`<div class="ch-avatar" style="background:${p?.color||'#555'}">${(p?.name||'?')[0].toUpperCase()}</div><div class="ch-name" style="color:${p?.color||'#fff'}">${p?.name||'?'}</div><div class="ch-word">${c.clue}</div>`;
+      inner.appendChild(row);
+    });
+  });
+  body.appendChild(inner);
+  if (wasOpen) body.classList.add('open');
+  const count = MP.allClues.length;
+  document.getElementById('mpHistoryLabel').textContent = count ? `📋 ${count} clue${count>1?'s':''} — tap to expand` : '📋 No clues yet';
+}
+
+function mpToggleHistory() {
+  MP.historyOpen = !MP.historyOpen;
+  document.getElementById('mpClueHistory').classList.toggle('open', MP.historyOpen);
+  document.getElementById('mpHistoryArrow').style.transform = MP.historyOpen ? 'rotate(180deg)' : '';
+}
+
+function mpSubmitClue() {
+  const input = document.getElementById('mpClueInput');
+  const text = input.value.trim();
+  if (!text) return;
+  const me = MP.players.find(p=>p.id===MP.myId);
+  const entry = { playerId: MP.myId, name: me.name, clue: text, round: MP.round };
+  MP.allClues.push(entry);
+  input.value = '';
+  mpSend('clue_submitted', entry);
+
+  const active = MP.players.filter(p=>!MP.eliminated.includes(p.id));
+  // Auto vote after full round
+  if (MP.allClues.filter(c=>c.round===MP.round).length >= active.length && MP.isHost) {
+    setTimeout(() => mpCallVote(), 600);
+  } else {
+    mpUpdateClueRound();
+  }
+}
+
+function mpReceiveClue(entry) {
+  MP.allClues.push(entry);
+  mpUpdateClueRound();
+}
+
+function mpCallVote() {
+  document.getElementById('mpClueInput').blur();
+  mpSend('vote_called', { allClues: MP.allClues, round: MP.round });
+  mpShowVoteScreen({ allClues: MP.allClues, round: MP.round });
+}
+
+/* ── VOTING ── */
+function mpShowVoteScreen(payload) {
+  MP.allClues = payload.allClues || MP.allClues;
+  MP.votes = {};
+  mpBuildRecap();
+  mpRenderVoteOptions();
+  showScreen('mp-vote');
+}
+
+function mpBuildRecap() {
+  const body = document.getElementById('mpRecapBody');
+  body.innerHTML = '';
+  const rounds = {};
+  MP.allClues.forEach(c => { if (!rounds[c.round]) rounds[c.round]=[]; rounds[c.round].push(c); });
+  Object.keys(rounds).sort((a,b)=>a-b).forEach(r => {
+    const lbl = document.createElement('div'); lbl.className='recap-round-label'; lbl.textContent=`— ROUND ${r} —`; body.appendChild(lbl);
+    rounds[r].forEach(c => {
+      const p = MP.players.find(x=>x.id===c.playerId);
+      const row = document.createElement('div'); row.className='recap-clue-row'; row.style.background='var(--surface2)'; row.style.borderLeftColor=p?.color||'#fff';
+      row.innerHTML=`<span class="recap-clue-name" style="color:${p?.color||'#fff'}">${p?.name||'?'}</span><span class="recap-clue-word">${c.clue}</span>`;
+      body.appendChild(row);
+    });
+  });
+}
+
+function mpToggleRecap() {
+  const body = document.getElementById('mpRecapBody');
+  const hdr  = document.getElementById('mpRecapHeader');
+  const open = body.classList.toggle('open');
+  hdr.className = 'recap-header' + (open?' open':'');
+}
+
+function mpRenderVoteOptions() {
+  const active = MP.players.filter(p=>!MP.eliminated.includes(p.id));
+  const opts = document.getElementById('mpVoteOptions');
+  opts.innerHTML = '';
+  opts.style.gridTemplateColumns = active.length >= 5 ? 'repeat(3,1fr)' : 'repeat(2,1fr)';
+  active.forEach(p => {
+    if (p.id === MP.myId) return;
+    const card = document.createElement('div');
+    card.className = 'vote-option';
+    card.style.borderColor = p.color+'66';
+    card.innerHTML = `<div class="vo-avatar" style="background:${p.color}">${p.name[0].toUpperCase()}</div><div class="vo-name" style="color:${p.color}">${p.name}</div><div class="vo-btn" style="background:${p.color}">VOTE →</div>`;
+    card.onclick = () => mpCastVote(p.id);
+    opts.appendChild(card);
+  });
+  const skip = document.createElement('div');
+  skip.className = 'vote-option skip-opt';
+  skip.innerHTML = '⏭ SKIP / NOT SURE';
+  skip.onclick = () => mpCastVote('skip');
+  opts.appendChild(skip);
+  document.getElementById('mpVoteWait').style.display = 'none';
+}
+
+function mpCastVote(targetId) {
+  // Disable options after voting
+  document.querySelectorAll('#mpVoteOptions .vote-option').forEach(b => { b.onclick=null; b.style.opacity='0.4'; });
+  document.getElementById('mpVoteWait').style.display = 'block';
+  document.getElementById('mpVoteWait').textContent = 'Vote cast! Waiting for others...';
+  mpSend('vote_cast', { voterId: MP.myId, targetId });
+  mpReceiveVote({ voterId: MP.myId, targetId });
+}
+
+function mpReceiveVote(payload) {
+  const key = payload.targetId;
+  MP.votes[key] = (MP.votes[key]||0) + 1;
+  const active = MP.players.filter(p=>!MP.eliminated.includes(p.id));
+  const totalVotes = Object.values(MP.votes).reduce((a,b)=>a+b,0);
+  document.getElementById('mpVoteStatus').textContent = `${totalVotes} / ${active.length} voted`;
+  if (totalVotes >= active.length) {
+    mpShowResults();
+  }
+}
+
+/* ── RESULTS ── */
+function mpShowResults() {
+  showScreen('mp-results');
+  const active = MP.players.filter(p=>!MP.eliminated.includes(p.id));
+  const skipCount = MP.votes['skip']||0;
+  const majoritySkipped = skipCount >= Math.ceil(active.length/2);
+  let topId=null, topVotes=0;
+  active.forEach(p => { const v=MP.votes[p.id]||0; if(v>topVotes){topVotes=v;topId=p.id;} });
+
+  const nextBtn = document.getElementById('mpNextBtn');
+  const endBtn  = document.getElementById('mpEndBtn');
+  nextBtn.style.display='none'; endBtn.style.display='none';
+
+  const reveal = (lines, done) => typewriterRevealEl(document.getElementById('mpRevealLines'), lines, () => {
+    document.getElementById('mpRevealActions').style.display='flex'; done();
+  });
+
+  if (majoritySkipped || topVotes===0) {
+    MP.roundsSurvived++;
+    reveal([
+      { text:'Nobody eliminated.', size:'lg', color:'var(--muted)', speed:45, pauseAfter:300 },
+      { text:'The imposter lives on...', size:'xl', color:'var(--danger)', glow:true, speed:55, pauseAfter:200 },
+    ], () => { nextBtn.textContent='NEXT ROUND ▶'; nextBtn.style.display='block'; });
+  } else {
+    const topPlayer = MP.players.find(p=>p.id===topId);
+    const isImposter = MP.imposterIds.includes(topId);
+    if (isImposter) {
+      MP.eliminated.push(topId);
+      const remaining = MP.imposterIds.filter(id=>!MP.eliminated.includes(id));
+      reveal([
+        { text:`${topPlayer.name} has been voted out.`, size:'lg', color:topPlayer.color, glow:true, speed:55, pauseAfter:600 },
+        { text:'IMPOSTER', size:'xl', color:'var(--danger)', glow:true, speed:70, pauseAfter:400 },
+        { text:`The word was: ${MP.myWord||(MP.myIsImposter?'(your word)':'?')}`, size:'md', color:'var(--accent2)', speed:45, pauseAfter:200 },
+      ], () => { remaining.length===0 ? endBtn.style.display='block' : (nextBtn.textContent='CONTINUE ▶', nextBtn.style.display='block'); });
+    } else {
+      MP.eliminated.push(topId);
+      MP.roundsSurvived++;
+      reveal([
+        { text:`${topPlayer.name} has been voted out.`, size:'lg', color:topPlayer.color, glow:true, speed:55, pauseAfter:600 },
+        { text:'INNOCENT', size:'xl', color:'var(--success)', glow:true, speed:70, pauseAfter:300 },
+      ], () => {
+        const rem = active.filter(p=>!MP.eliminated.includes(p.id));
+        rem.length<=2 ? endBtn.style.display='block' : (nextBtn.textContent='NEXT ROUND ▶', nextBtn.style.display='block');
+      });
+    }
+  }
+}
+
+/* Shared typewriter that works on any container element */
+function typewriterRevealEl(container, lines, onDone) {
+  container.innerHTML = '';
+  let i = 0;
+  function nextLine() {
+    if (i >= lines.length) { setTimeout(onDone, 400); return; }
+    const cfg = lines[i++];
+    const div = document.createElement('div');
+    div.className = `reveal-line size-${cfg.size||'md'}`;
+    if (cfg.color) div.style.color = cfg.color;
+    if (cfg.glow)  div.style.textShadow = `0 0 30px ${cfg.color}88`;
+    container.appendChild(div);
+    setTimeout(() => {
+      const text = cfg.text; let ci=0;
+      const cursor = document.createElement('span'); cursor.className='reveal-cursor'; div.appendChild(cursor);
+      const iv = setInterval(() => {
+        cursor.insertAdjacentText('beforebegin', text[ci]); ci++;
+        if (ci>=text.length) { clearInterval(iv); setTimeout(()=>{ cursor.remove(); setTimeout(nextLine, cfg.pauseAfter||300); },200); }
+      }, cfg.speed||55);
+    }, cfg.delay||0);
+  }
+  nextLine();
+}
+
+function mpNextRound() {
+  MP.round++;
+  MP.votes = {};
+  if (MP.isHost) mpSend('next_round', { round: MP.round, eliminated: MP.eliminated, roundsSurvived: MP.roundsSurvived });
+  mpShowClueRound();
+}
+
+function mpReceiveNextRound(payload) {
+  MP.round = payload.round;
+  MP.eliminated = payload.eliminated || [];
+  MP.roundsSurvived = payload.roundsSurvived || 0;
+  MP.votes = {};
+  mpShowClueRound();
+}
+
+function mpEndGame() {
+  const caughtAll = MP.imposterIds.every(id=>MP.eliminated.includes(id));
+  const imposterNames = MP.imposterIds.map(id=>MP.players.find(p=>p.id===id)?.name).join(', ');
+  document.getElementById('mpTrophy').textContent = caughtAll?'🎉':'🎭';
+  document.getElementById('mpFinalTitle').textContent = caughtAll?'IMPOSTERS CAUGHT!':'IMPOSTERS WIN!';
+  document.getElementById('mpSurvivalCount').textContent = MP.roundsSurvived;
+  document.getElementById('mpSurvivalLabel').textContent = caughtAll?'rounds survived before caught':'rounds survived — imposters win!';
+  document.getElementById('mpFinalStats').innerHTML = `
+    <div class="stat-row"><span style="color:var(--muted)">Imposter(s)</span><span style="color:var(--danger)">${imposterNames}</span></div>
+    <div class="stat-row"><span style="color:var(--muted)">Players</span><span>${MP.players.length}</span></div>
+    <div class="stat-row"><span style="color:var(--muted)">Total Rounds</span><span style="color:var(--gold)">${MP.round}</span></div>
+    <div class="stat-row"><span style="color:var(--muted)">Score</span><span style="color:var(--gold);font-family:'Orbitron',monospace">${MP.roundsSurvived * MP.players.length} pts</span></div>`;
+  showScreen('mp-final');
+}
+
+function mpLeave() {
+  if (MP.channel) { MP.channel.unsubscribe(); MP.channel=null; }
+  MP = { channel:null, myName:'', myId:'', roomCode:'', isHost:false, players:[], numImposters:1, settings:{}, myWord:'', myIsImposter:false, myCoImposters:[], allClues:[], votes:{}, round:1, roundsSurvived:0, imposterIds:[], eliminated:[], historyOpen:false, recapOpen:false };
+  showScreen('splash');
+}
+</script>
+  <!-- Global floating undo button -->
+  <button id="globalUndoBtn" onclick="undoLastAction()" title="Nothing to undo"
+    style="position:fixed;bottom:24px;right:16px;z-index:2000;
+           background:var(--surface);border:1.5px solid var(--border);
+           color:var(--muted);border-radius:50px;padding:10px 16px;
+           font-family:'Rajdhani',sans-serif;font-size:0.85rem;font-weight:700;
+           cursor:pointer;box-shadow:0 4px 20px #0006;
+           display:flex;align-items:center;gap:6px;
+           opacity:0.25;pointer-events:none;transition:opacity 0.2s;">
+    ↩ UNDO
+  </button>
+</body>
+</html>
