@@ -636,7 +636,10 @@ select option { background:#0d1428; color:#e8eaf6; }
 
 <!-- HANDOFF SCREEN — between players -->
 <div class="screen" id="handoff" style="justify-content:center">
-  <div style="text-align:center;padding:30px 24px;max-width:340px">
+  <div style="text-align:center;padding:20px 24px;max-width:340px;width:100%">
+    <div style="display:flex;justify-content:flex-start;margin-bottom:16px">
+      <button onclick="handoffGoBack()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:10px;padding:6px 14px;font-family:'Rajdhani',sans-serif;font-size:0.9rem;cursor:pointer">← BACK</button>
+    </div>
     <div style="font-size:4rem;margin-bottom:16px">📱</div>
     <div style="font-family:'Orbitron',monospace;font-size:1.3rem;font-weight:900;color:var(--accent2);letter-spacing:2px;margin-bottom:16px">PASS THE PHONE</div>
     <div id="handoffMsg" style="font-size:1.05rem;color:var(--muted);line-height:1.7;margin-bottom:36px"></div>
@@ -646,14 +649,7 @@ select option { background:#0d1428; color:#e8eaf6; }
 
 <!-- MID-CLUE REORDER -->
 <div class="screen" id="midreorder" style="justify-content:flex-start;padding-top:20px">
-  <div style="width:100%;max-width:400px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding:0 4px">
-      <div style="font-family:'Orbitron',monospace;font-size:0.9rem;color:var(--accent);letter-spacing:1px">↕ SET ORDER</div>
-      <button onclick="closeMidClueReorder()" style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);border-radius:10px;padding:6px 14px;font-family:'Rajdhani',sans-serif;font-size:0.9rem;cursor:pointer">← BACK</button>
-    </div>
-    <p id="reorderHint" style="font-size:0.85rem;color:var(--muted);text-align:center;margin-bottom:14px">Tap a player to pick them up, then tap a position to place them</p>
-    <div id="midReorderList" style="display:flex;flex-direction:column;gap:8px;width:100%"></div>
-  </div>
+  <!-- midreorder is now a shell; actual UI is the reorderModal overlay -->
 </div>
 
 <!-- MID-GAME REVIEW -->
@@ -724,6 +720,7 @@ select option { background:#0d1428; color:#e8eaf6; }
     <button class="btn btn-secondary" onclick="continueClues()" style="width:100%;font-size:1rem">
       💬 ANOTHER CLUE ROUND
     </button>
+    <button onclick="showScreen('clueround');renderClueRound();" style="margin-top:18px;background:none;border:none;color:var(--muted);font-family:'Rajdhani',sans-serif;font-size:0.9rem;cursor:pointer;text-decoration:underline">← Back to clue round</button>
   </div>
 </div>
 
@@ -751,7 +748,7 @@ select option { background:#0d1428; color:#e8eaf6; }
   <div style="flex:1;overflow-y:auto;width:100%;padding:10px 14px 20px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
       <div style="font-size:0.65rem;color:var(--muted);letter-spacing:2px">CLUE RECAP</div>
-      <button onclick="undoVote()" style="background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.3);color:#ffd700;border-radius:10px;padding:4px 10px;font-family:'Rajdhani',sans-serif;font-size:0.8rem;cursor:pointer">↩ UNDO VOTE</button>
+      <button id="undoVoteBtn" onclick="undoVote()" style="background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.3);color:#ffd700;border-radius:10px;padding:4px 10px;font-family:'Rajdhani',sans-serif;font-size:0.8rem;cursor:pointer;display:none">↩ UNDO VOTE</button>
     </div>
     <div id="recapBody"></div>
   </div>
@@ -759,6 +756,9 @@ select option { background:#0d1428; color:#e8eaf6; }
 
 <!-- RESULTS — dramatic typewriter reveal -->
 <div class="screen" id="results">
+  <div style="position:absolute;top:14px;left:14px;z-index:10">
+    <button onclick="undoLastAction()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:10px;padding:6px 14px;font-family:'Rajdhani',sans-serif;font-size:0.85rem;cursor:pointer">↩ UNDO</button>
+  </div>
   <div class="reveal-stage" id="revealStage">
     <div class="reveal-lines" id="revealLines"></div>
     <!-- Vote breakdown — shown after reveal -->
@@ -775,6 +775,9 @@ select option { background:#0d1428; color:#e8eaf6; }
 
 <!-- FINAL -->
 <div class="screen" id="final">
+  <div style="position:absolute;top:14px;left:14px;z-index:10">
+    <button onclick="undoLastAction()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:10px;padding:6px 14px;font-family:'Rajdhani',sans-serif;font-size:0.85rem;cursor:pointer">↩ UNDO</button>
+  </div>
   <div class="trophy" id="finalTrophy">🕵️</div>
   <div class="screen-title" id="finalTitle">GAME OVER</div>
   <div class="survival-count" id="survivalCount">0</div>
@@ -1937,6 +1940,9 @@ function showVoting() {
 
   showScreen('voting');
   document.getElementById('voting').scrollTop = 0;
+  // Only show undo vote if votes have been cast
+  const undoVoteBtn = document.getElementById('undoVoteBtn');
+  if (undoVoteBtn) undoVoteBtn.style.display = G.voterIndex > 0 ? 'inline-block' : 'none';
 }
 
 function castVote(pid) {
@@ -2229,6 +2235,10 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if (id !== 'results' && id !== 'mp-results') stopAnnouncer();
+  // Only show global undo button during active gameplay
+  const gameScreens = ['handoff','clueround','clueend','voting','results','final','reveal','wordcard','midreview'];
+  const undoBtn = document.getElementById('globalUndoBtn');
+  if (undoBtn) undoBtn.style.display = gameScreens.includes(id) ? 'flex' : 'none';
 }
 
 /* ══════════════════════════════════════════
